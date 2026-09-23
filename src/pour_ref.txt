@@ -1,0 +1,1 @@
+UPDATE constante SET visite_id = NULL WHERE visite_id = 0;
