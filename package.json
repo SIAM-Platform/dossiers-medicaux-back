@@ -1,7 +1,7 @@
 {
-  "name": "dmgm-backend",
+  "name": "dossiers-medicaux-siam-backend",
   "version": "0.0.1",
-  "description": "",
+  "description": "SIAM \u2014 Gestion des Dossiers M\u00e9dicaux des Marins (NestJS API)",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
