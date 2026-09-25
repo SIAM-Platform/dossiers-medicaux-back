@@ -72,13 +72,15 @@ export class MarinsController {
     return this.marinsService.remove(id);
   }
 
-  // Optionnel : un endpoint public pour vérification (ex: existence d'un marin)
+  // Endpoint public de vérification d'existence : il ne renvoie QUE le booléen.
+  // (Il renvoyait la fiche complète — identité, contacts, CNI, situations sensibles —
+  // sans authentification.)
   @Public()
   @Get('public/check/:numero_ins_mar')
   async checkExistence(@Param('numero_ins_mar') numero_ins_mar: string) {
     try {
-      const marin = await this.marinsService.findByNumeroInsMar(numero_ins_mar);
-      return { exists: true, marin };
+      await this.marinsService.findByNumeroInsMar(numero_ins_mar);
+      return { exists: true };
     } catch {
       return { exists: false };
     }
