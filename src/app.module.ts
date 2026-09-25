@@ -11,6 +11,7 @@ import { ReferentielsModule } from './referentiels/modules/referentiels.module';
 import { InfirmiersModule } from './infirmiers/modules/infirmiers.module';
 import { MedecinsModule } from './medecins/modules/medecins.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { SiamIntegrationModule } from './integrations/siam/siam-integration.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     InfirmiersModule,
     MedecinsModule,
     DashboardModule,
+    SiamIntegrationModule,
   ],
 })
 export class AppModule {}
