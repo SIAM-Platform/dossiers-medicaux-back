@@ -12,6 +12,9 @@ import { InfirmiersModule } from './infirmiers/modules/infirmiers.module';
 import { MedecinsModule } from './medecins/modules/medecins.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SiamIntegrationModule } from './integrations/siam/siam-integration.module';
+import { KeycloakAuthGuard } from './auth/guards/keycloak-auth.guard';
+import { privacyModule } from './privacy/privacy.module';
+import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
 
 @Module({
   imports: [
@@ -43,6 +46,12 @@ import { SiamIntegrationModule } from './integrations/siam/siam-integration.modu
     MedecinsModule,
     DashboardModule,
     SiamIntegrationModule,
+    // RGPD : registre des traitements, durées de conservation, demandes des personnes, export.
+    privacyModule({
+      inventory: PRIVACY_INVENTORY_DATA,
+      authGuards: [KeycloakAuthGuard],
+      access: { read: ['PRIVACY_OFFICER', 'admin'], manage: ['PRIVACY_OFFICER', 'admin'], export: ['PRIVACY_OFFICER', 'admin'] },
+    }),
   ],
 })
 export class AppModule {}
