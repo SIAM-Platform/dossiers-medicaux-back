@@ -10,6 +10,7 @@ import request from 'supertest';
 import { DataSource } from 'typeorm';
 import { PRIVACY_INVENTORY_DATA as INVENTORY } from '../src/privacy/inventory';
 import { privacyModule } from '../src/privacy/privacy.module';
+import { ident, run } from '../src/privacy/sql';
 
 /**
  * Module RGPD contre la vraie base du service (PostgreSQL ou MySQL) :
@@ -109,6 +110,32 @@ class TestAuth implements CanActivate {
     }[]) {
       expect(typeof line.eligible).toBe('number');
       expect(line.applied).toBe(0);
+    }
+  });
+
+  it('chaque suppression ou anonymisation est valide sur le schéma réel (exécutée puis annulée)', async () => {
+    for (const d of INVENTORY.datasets) {
+      const purges = [
+        ...(d.retention.purge ? [d.retention.purge] : []),
+        ...(d.retention.purges ?? []),
+      ];
+      for (const p of purges) {
+        const sql =
+          d.retention.action === 'DELETE'
+            ? `DELETE FROM ${ident(ds, p.table)} WHERE ${p.condition}`
+            : `UPDATE ${ident(ds, p.table)} SET ${Object.entries(p.set ?? {})
+                .map(([c, v]) => `${ident(ds, c)} = ${v}`)
+                .join(', ')} WHERE ${p.condition}`;
+        const runner = ds.createQueryRunner();
+        await runner.connect();
+        await runner.startTransaction();
+        try {
+          await run(ds, runner, sql, [new Date()]);
+        } finally {
+          await runner.rollbackTransaction();
+          await runner.release();
+        }
+      }
     }
   });
 
