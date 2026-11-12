@@ -45,3 +45,17 @@ PRIVACY_TEST_DB_TYPE=mysql PRIVACY_TEST_DB_URL=… npx jest --config test/jest-e
 ```
 
 Le test exécute chaque condition de purge et chaque exporteur sur le schéma réel, sans rien supprimer.
+
+## Journal d'audit du dossier médical
+
+Module `src/audit/` : chaque consultation et chaque modification (réussie ou refusée) est tracée
+dans `audit_events` : agent, date, action (`CONSULTATION`, `MODIFICATION CONSTANTE`…), objet,
+route, code de retour, **noms** des champs envoyés (jamais leurs valeurs). Les identifiants de
+recherche (CNI, e-mail, numéro d'inscription) et l'adresse IP sont pseudonymisés.
+
+- ajout seul (déclencheurs MySQL) et chaîné : chaque entrée porte l'empreinte SHA-256 de la
+  précédente ; la tête de chaîne est verrouillée, plusieurs copies du service écrivent sans se croiser ;
+- `GET /api/audit?entityType=visites&entityId=…` : historique d'un objet ;
+  `GET /api/audit/verify` : recalcul de toute la chaîne ;
+- lecture réservée à `admin` et `PRIVACY_OFFICER` (surchargeable : `AUDIT_ROLES_READ`).
+- Test : `PRIVACY_TEST_DB_URL=mysql://… npx jest --config test/jest-e2e.json audit`.

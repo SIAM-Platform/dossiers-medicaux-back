@@ -119,6 +119,28 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
           "Le nom du professionnel reste attaché aux actes qu'il a signés ; désactivation par l'administrateur",
       },
     },
+    {
+      code: 'JOURNAL_AUDIT',
+      label:
+        "Journal d'audit des consultations et modifications du dossier médical",
+      purpose:
+        'Savoir qui a consulté ou modifié le dossier d’un marin, et quand (secret médical, sécurité)',
+      legalBasis:
+        'Sécurité du traitement (art. 32) et obligation de traçabilité des accès aux données de santé',
+      subjects:
+        'Personnel du centre médical ; marins (par leur identifiant technique)',
+      categories: ['IDENTITE', 'CONNEXION'],
+      storage:
+        'audit_events (ajout seul, chaîne SHA-256 ; noms des champs, jamais les valeurs ; CNI, e-mail et adresse IP pseudonymisés)',
+      recipients: ['Administrateurs', 'Délégué à la protection des données'],
+      retention: {
+        key: 'journal-audit',
+        defaultDays: null,
+        action: 'KEEP',
+        justification:
+          'Preuve des accès au dossier médical ; aucune donnée médicale ni identité de marin en clair',
+      },
+    },
     requestsDataset,
   ],
   processors: COMMON_PROCESSORS,

@@ -14,6 +14,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { SiamIntegrationModule } from './integrations/siam/siam-integration.module';
 import { KeycloakAuthGuard } from './auth/guards/keycloak-auth.guard';
 import { privacyModule } from './privacy/privacy.module';
+import { AuditModule } from './audit/audit.module';
 import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
 
 @Module({
@@ -46,6 +47,8 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
     MedecinsModule,
     DashboardModule,
     SiamIntegrationModule,
+    // Journal d'audit du dossier médical (consultations et modifications, chaîné, en ajout seul).
+    AuditModule,
     // RGPD : registre des traitements, durées de conservation, demandes des personnes, export.
     privacyModule({
       inventory: PRIVACY_INVENTORY_DATA,
