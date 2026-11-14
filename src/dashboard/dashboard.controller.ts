@@ -1,16 +1,15 @@
 /* eslint-disable prettier/prettier */
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
-import { KeycloakAuthGuard } from '../auth/guards/keycloak-auth.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { RequirePermission } from '../access/decorators';
+import { PERMISSIONS } from '../access/permissions';
 
 @Controller('dashboard')
-@UseGuards(KeycloakAuthGuard)
 export class DashboardController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('stats')
-  @Roles('admin', 'medecin', 'infirmier','ci','IT')
+  @RequirePermission(PERMISSIONS.DASHBOARD_READ)
   getStats(
     @Query('dateDebut') dateDebut?: string,
     @Query('dateFin') dateFin?: string,

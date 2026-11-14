@@ -13,7 +13,12 @@ import { InfirmiersModule } from './infirmiers/modules/infirmiers.module';
 import { MedecinsModule } from './medecins/modules/medecins.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { SiamIntegrationModule } from './integrations/siam/siam-integration.module';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { ProblemDetailsFilter } from './common/problem-details.filter';
+import { HealthController } from './health/health.controller';
 import { KeycloakAuthGuard } from './auth/guards/keycloak-auth.guard';
+import { AccessModule } from './access/access.module';
+import { PermissionGuard } from './access/permission.guard';
 import { privacyModule } from './privacy/privacy.module';
 import { AuditModule } from './audit/audit.module';
 import { MarinProtectionService } from './marins/marin-protection.service';
@@ -32,6 +37,7 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
         autoLoadEntities: true,
       }),
     }),
+    AccessModule,
     AuthModule,
     UsersModule,
     MarinsModule,
@@ -46,14 +52,23 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
     // RGPD : registre des traitements, durées de conservation, demandes des personnes, export.
     privacyModule({
       inventory: PRIVACY_INVENTORY_DATA,
-      authGuards: [KeycloakAuthGuard],
+      // Authentification et permissions : gardes globaux ci-dessous ; accès par permissions RGPD.
+      authGuards: [],
       access: {
-        read: ['PRIVACY_OFFICER', 'admin'],
-        manage: ['PRIVACY_OFFICER', 'admin'],
-        export: ['PRIVACY_OFFICER', 'admin'],
+        read: ['privacy.read'],
+        manage: ['privacy.manage'],
+        export: ['privacy.export'],
       },
     }),
   ],
-  providers: [MarinProtectionService],
+  providers: [
+    MarinProtectionService,
+    // Ordre : authentification Keycloak, puis permissions fines (route sans permission = refus).
+    { provide: APP_GUARD, useClass: KeycloakAuthGuard },
+    { provide: APP_GUARD, useClass: PermissionGuard },
+    // Erreurs au format problem+json (socle), sans erreur 500 sur une contrainte de base.
+    { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+  ],
+  controllers: [HealthController],
 })
 export class AppModule {}

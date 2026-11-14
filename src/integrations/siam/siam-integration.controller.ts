@@ -2,10 +2,13 @@
 import { Controller, Get, Header, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { SiamCaller, SiamIntegrationGuard } from './siam-integration.guard';
+import { Public } from '../../auth/decorators/public.decorator';
 import { SiamIntegrationService } from './siam-integration.service';
 
 @ApiTags('Intégration SIAM')
 @Controller('integrations/siam')
+// Hors connexion des agents : les applications SIAM s'authentifient par clé ou jeton de service.
+@Public()
 @UseGuards(SiamIntegrationGuard)
 export class SiamIntegrationController {
   constructor(private readonly service: SiamIntegrationService) {}

@@ -13,12 +13,11 @@ import {
   Delete,
   UseGuards,
   ParseIntPipe,
+  DefaultValuePipe,
   Query,
 } from '@nestjs/common';
 import { VisitesService } from '../services/visites.service';
 import { CreateVisiteDto } from '../dto/create-visite.dto';
-import { KeycloakAuthGuard } from '../../auth/guards/keycloak-auth.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
 import { UpdateAutoDeclarationDto } from '../dto/update-auto-declaration.dto';
 import { UpdateConstanteDto } from '../dto/update-constante.dto';
 import { UpdateExamenCliniqueDto } from '../dto/update-examen-clinique.dto';
@@ -27,41 +26,42 @@ import { UpdateVaccinationDto } from '../dto/update-vaccination.dto';
 import { UpdateAutreExamenDto } from '../dto/update-autre-examen.dto';
 import { UpdateRadioDto } from '../dto/update-radio.dto';
 import { UpdateConclusionDto } from '../entities/update-conclusion.dto';
+import { RequirePermission } from '../../access/decorators';
+import { PERMISSIONS } from '../../access/permissions';
 
 @Controller('visites')
-@UseGuards(KeycloakAuthGuard)
 export class VisitesController {
   constructor(private readonly visitesService: VisitesService) { }
 
   @Post()
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_CREATE)
   create(@Body() createDto: CreateVisiteDto) {
     return this.visitesService.create(createDto);
   }
 
   @Get()
-  @Roles('admin', 'medecin', 'infirmier','ci','IT')
+  @RequirePermission(PERMISSIONS.VISITE_LIST)
   findAll(
-    @Query('page', ParseIntPipe) page: number = 1,
-    @Query('limit', ParseIntPipe) limit: number = 10,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
     return this.visitesService.findAll(page, limit);
   }
 
   @Get(':id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_READ)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.visitesService.findOne(id);
   }
 
   @Get('marin/:marinId')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_READ)
   findByMarin(@Param('marinId', ParseIntPipe) marinId: number) {
     return this.visitesService.findByMarin(marinId);
   }
 
   @Put(':id')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateData: Partial<CreateVisiteDto>,
@@ -71,13 +71,13 @@ export class VisitesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.VISITE_DELETE)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.visitesService.remove(id);
   }
 
   @Put(':id/constante')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateConstante(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateConstanteDto,
@@ -86,7 +86,7 @@ export class VisitesController {
   }
 
   @Put(':id/examen-clinique')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateExamenClinique(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateExamenCliniqueDto,
@@ -95,7 +95,7 @@ export class VisitesController {
   }
 
   @Put(':id/vaccination')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateVaccination(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateVaccinationDto,
@@ -104,7 +104,7 @@ export class VisitesController {
   }
 
   @Put(':id/test-drogue')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateTestDrogue(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateTestDrogueDto,
@@ -113,7 +113,7 @@ export class VisitesController {
   }
 
   @Put(':id/auto-declaration')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateAutoDeclaration(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateAutoDeclarationDto,
@@ -122,7 +122,7 @@ export class VisitesController {
   }
 
   @Put(':id/radio')
-  @Roles('admin', 'medecin','infirmier')
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
   async updateRadio(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateRadioDto,
@@ -132,7 +132,7 @@ export class VisitesController {
   }
 
   @Put(':id/autre-examen')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.VISITE_OTHER_EXAM)
   async updateAutreExamen(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateAutreExamenDto,
@@ -141,7 +141,7 @@ export class VisitesController {
   }
 
   @Put(':id/conclusion')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.VISITE_CONCLUDE)
   async updateConclusion(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDto: UpdateConclusionDto,

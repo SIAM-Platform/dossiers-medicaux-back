@@ -63,6 +63,8 @@ export function rolesOf(user: unknown): string[] {
   };
   const local = (u.localUser ?? {}) as Record<string, unknown>;
   for (const v of [
+    // Permissions fines (modèle du socle) : `access` peut citer des codes de permission.
+    u.permissions,
     u.roles,
     u.realmRoles,
     (u.realm_access as { roles?: unknown })?.roles,
@@ -146,6 +148,8 @@ export function privacyModule(opts: {
   }
 
   @Controller(opts.prefix ?? 'privacy')
+  // Route connue du contrôle global des permissions (le niveau est vérifié par PrivacyAccessGuard).
+  @SetMetadata('siam:authenticated', true)
   @UseGuards(...opts.authGuards, PrivacyAccessGuard)
   class PrivacyController {
     constructor(private readonly privacy: PrivacyService) {}

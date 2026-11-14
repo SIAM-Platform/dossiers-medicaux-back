@@ -18,6 +18,12 @@ import { DataSource } from 'typeorm';
 import { AuditModule } from '../src/audit/audit.module';
 import { AuditService } from '../src/audit/audit.service';
 import { KeycloakAuthGuard } from '../src/auth/guards/keycloak-auth.guard';
+import {
+  DEFAULT_ROLE_PERMISSIONS,
+  PERMISSIONS,
+} from '../src/access/permissions';
+import { RequirePermission } from '../src/access/decorators';
+import { PermissionGuard } from '../src/access/permission.guard';
 import { AuditJournal1794688034400 } from '../src/migrations/1794688034400-AuditJournal';
 
 /**
@@ -35,13 +41,15 @@ class TestAuth implements CanActivate {
     const req = ctx
       .switchToHttp()
       .getRequest<{ headers: Record<string, string>; user?: unknown }>();
+    const role = req.headers['x-test-role'] ?? 'medecin';
     req.user = {
       sub: 'kc-test',
+      permissions: (DEFAULT_ROLE_PERMISSIONS[role] ?? []).map((p) => p.code),
       localUser: {
         id: 4242,
         firstName: 'Médecin',
         lastName: 'Test',
-        roles: [{ name: req.headers['x-test-role'] ?? 'medecin' }],
+        roles: [{ name: role }],
       },
     };
     return true;
@@ -51,20 +59,23 @@ class TestAuth implements CanActivate {
 /** Routes de même forme que celles du service. */
 @Controller('visites')
 class FakeVisites {
-  @Get(':id') one(@Param('id') id: string) {
+  @RequirePermission(PERMISSIONS.VISITE_READ)
+  @Get(':id')
+  one(@Param('id') id: string) {
     if (id === '0') throw new NotFoundException();
     return { id };
   }
-  @Put(':id/constante') constante(
-    @Param('id') id: string,
-    @Body() b: Record<string, unknown>,
-  ) {
+  @RequirePermission(PERMISSIONS.VISITE_UPDATE)
+  @Put(':id/constante')
+  constante(@Param('id') id: string, @Body() b: Record<string, unknown>) {
     return { id, ...b };
   }
 }
 @Controller('marins')
 class FakeMarins {
-  @Get('numero-cni/:numero_cni') byCni(@Param('numero_cni') cni: string) {
+  @RequirePermission(PERMISSIONS.MARIN_READ)
+  @Get('numero-cni/:numero_cni')
+  byCni(@Param('numero_cni') cni: string) {
     return { cni };
   }
 }
@@ -91,7 +102,10 @@ class FakeMarins {
         AuditModule,
       ],
       controllers: [FakeVisites, FakeMarins],
-      providers: [{ provide: APP_GUARD, useClass: TestAuth }],
+      providers: [
+        { provide: APP_GUARD, useClass: TestAuth },
+        { provide: APP_GUARD, useClass: PermissionGuard },
+      ],
     })
       .overrideGuard(KeycloakAuthGuard)
       .useClass(TestAuth)

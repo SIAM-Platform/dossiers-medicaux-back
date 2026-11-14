@@ -7,195 +7,189 @@ import {
   Param,
   Put,
   Delete,
-  UseGuards,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ReferentielsService } from '../services/referentiels.service';
-import { TypeVisite } from '../entities/type-visite.entity';
-import { FonctionABord } from '../entities/fonction-a-bord.entity';
-import { TypeNavire } from '../entities/type-navire.entity';
-import { CategorieAutoDeclaration } from '../entities/categorie-auto-declaration.entity';
-import { QuestionAutoDeclaration } from '../entities/question-auto-declaration.entity';
-import { KeycloakAuthGuard } from '../../auth/guards/keycloak-auth.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
+import { CategorieDto, LibeleDto, QuestionDto } from '../dto/referentiel.dto';
+import { RequirePermission } from '../../access/decorators';
+import { PERMISSIONS } from '../../access/permissions';
 
 @Controller('referentiels')
-@UseGuards(KeycloakAuthGuard)
 export class ReferentielsController {
   constructor(private readonly referentielsService: ReferentielsService) { }
 
   // ==================== TypeVisite ====================
   @Get('type-visites')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findAllTypeVisites() {
     return this.referentielsService.findAllTypeVisites();
   }
 
   @Get('type-visites/:id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findOneTypeVisite(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.findOneTypeVisite(id);
   }
 
   @Post('type-visites')
-  @Roles('admin', 'medecin')
-  createTypeVisite(@Body() data: Partial<TypeVisite>) {
-    return this.referentielsService.createTypeVisite(data);
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
+  createTypeVisite(@Body() dto: LibeleDto) {
+    return this.referentielsService.createTypeVisite({ libele: dto.libele });
   }
 
   @Put('type-visites/:id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
   updateTypeVisite(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<TypeVisite>,
+    @Body() dto: LibeleDto,
   ) {
-    return this.referentielsService.updateTypeVisite(id, data);
+    return this.referentielsService.updateTypeVisite(id, { libele: dto.libele });
   }
 
   @Delete('type-visites/:id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_DELETE)
   removeTypeVisite(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.removeTypeVisite(id);
   }
 
   // ==================== FonctionABord ====================
   @Get('fonctions')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findAllFonctions() {
     return this.referentielsService.findAllFonctions();
   }
 
   @Get('fonctions/:id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findOneFonction(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.findOneFonction(id);
   }
 
   @Post('fonctions')
-  @Roles('admin', 'medecin')
-  createFonction(@Body() data: Partial<FonctionABord>) {
-    return this.referentielsService.createFonction(data);
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
+  createFonction(@Body() dto: LibeleDto) {
+    return this.referentielsService.createFonction({ libele: dto.libele });
   }
 
   @Put('fonctions/:id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
   updateFonction(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<FonctionABord>,
+    @Body() dto: LibeleDto,
   ) {
-    return this.referentielsService.updateFonction(id, data);
+    return this.referentielsService.updateFonction(id, { libele: dto.libele });
   }
 
   @Delete('fonctions/:id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_DELETE)
   removeFonction(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.removeFonction(id);
   }
 
   // ==================== TypeNavire ====================
   @Get('type-navires')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findAllTypeNavires() {
     return this.referentielsService.findAllTypeNavires();
   }
 
   @Get('type-navires/:id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findOneTypeNavire(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.findOneTypeNavire(id);
   }
 
   @Post('type-navires')
-  @Roles('admin', 'medecin')
-  createTypeNavire(@Body() data: Partial<TypeNavire>) {
-    return this.referentielsService.createTypeNavire(data);
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
+  createTypeNavire(@Body() dto: LibeleDto) {
+    return this.referentielsService.createTypeNavire({ libele: dto.libele });
   }
 
   @Put('type-navires/:id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
   updateTypeNavire(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<TypeNavire>,
+    @Body() dto: LibeleDto,
   ) {
-    return this.referentielsService.updateTypeNavire(id, data);
+    return this.referentielsService.updateTypeNavire(id, { libele: dto.libele });
   }
 
   @Delete('type-navires/:id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_DELETE)
   removeTypeNavire(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.removeTypeNavire(id);
   }
 
   // ==================== CategorieAutoDeclaration ====================
   @Get('categories-auto-declaration')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findAllCategories() {
     return this.referentielsService.findAllCategories();
   }
 
   @Get('categories-auto-declaration/:id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findOneCategorie(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.findOneCategorie(id);
   }
 
   @Post('categories-auto-declaration')
-  @Roles('admin', 'medecin')
-  createCategorie(@Body() data: Partial<CategorieAutoDeclaration>) {
-    return this.referentielsService.createCategorie(data);
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
+  createCategorie(@Body() dto: CategorieDto) {
+    return this.referentielsService.createCategorie({ nom: dto.nom });
   }
 
   @Put('categories-auto-declaration/:id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
   updateCategorie(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<CategorieAutoDeclaration>,
+    @Body() dto: CategorieDto,
   ) {
-    return this.referentielsService.updateCategorie(id, data);
+    return this.referentielsService.updateCategorie(id, { nom: dto.nom });
   }
 
   @Delete('categories-auto-declaration/:id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_DELETE)
   removeCategorie(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.removeCategorie(id);
   }
 
   // ==================== QuestionAutoDeclaration ====================
   @Get('questions-auto-declaration')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findAllQuestions() {
     return this.referentielsService.findAllQuestions();
   }
 
   @Get('questions-auto-declaration/:id')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findOneQuestion(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.findOneQuestion(id);
   }
 
   @Get('questions-auto-declaration/by-categorie/:categorieId')
-  @Roles('admin', 'medecin', 'infirmier')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_READ)
   findQuestionsByCategorie(@Param('categorieId', ParseIntPipe) categorieId: number) {
     return this.referentielsService.findQuestionsByCategorie(categorieId);
   }
 
   @Post('questions-auto-declaration')
-  @Roles('admin', 'medecin')
-  createQuestion(@Body() data: Partial<QuestionAutoDeclaration>) {
-    return this.referentielsService.createQuestion(data);
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
+  createQuestion(@Body() dto: QuestionDto) {
+    return this.referentielsService.createQuestion({ libelle: dto.libelle, categorieId: dto.categorieId });
   }
 
   @Put('questions-auto-declaration/:id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_EDIT)
   updateQuestion(
     @Param('id', ParseIntPipe) id: number,
-    @Body() data: Partial<QuestionAutoDeclaration>,
+    @Body() dto: QuestionDto,
   ) {
-    return this.referentielsService.updateQuestion(id, data);
+    return this.referentielsService.updateQuestion(id, { libelle: dto.libelle, categorieId: dto.categorieId });
   }
 
   @Delete('questions-auto-declaration/:id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.REFERENTIEL_DELETE)
   removeQuestion(@Param('id', ParseIntPipe) id: number) {
     return this.referentielsService.removeQuestion(id);
   }

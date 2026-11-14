@@ -23,5 +23,8 @@ RUN npm ci --omit=dev --legacy-peer-deps
 COPY --from=builder /app/dist ./dist
  
 EXPOSE 3000
+# Même sonde que le socle : base joignable et migrations appliquées.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health/ready > /dev/null || exit 1
  
 CMD ["node", "dist/main"]

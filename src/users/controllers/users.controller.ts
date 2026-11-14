@@ -17,12 +17,11 @@ import {
 import { UsersService } from '../services/users.service';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { AssignRoleDto } from '../dto/assign-role.dto';
-import { KeycloakAuthGuard } from '../../auth/guards/keycloak-auth.guard';
-import { Roles } from '../../auth/decorators/roles.decorator';
 import { CreateUserDto } from '../dto/create-user.dto';
+import { Authenticated, RequirePermission } from '../../access/decorators';
+import { PERMISSIONS } from '../../access/permissions';
 
 @Controller('users')
-@UseGuards(KeycloakAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
@@ -30,12 +29,13 @@ export class UsersController {
    * Récupère l'utilisateur connecté (profil local)
    */
   @Get('me')
+  @Authenticated()
   getMe(@Request() req) {
     return req.user?.localUser;
   }
 
   @Post()
-  @Roles('admin','medecin')
+  @RequirePermission(PERMISSIONS.USER_MANAGE)
   async createUser(@Body() createUserDto: CreateUserDto) {
     return this.usersService.createUser(createUserDto);
   }
@@ -45,7 +45,7 @@ export class UsersController {
    * Accessible uniquement aux admins
    */
   @Get()
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_READ)
   findAll() {
     return this.usersService.findAll();
   }
@@ -55,7 +55,7 @@ export class UsersController {
    * Accessible aux admins et aux médecins
    */
   @Get(':id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_READ)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.findOne(id);
   }
@@ -65,7 +65,7 @@ export class UsersController {
    * Accessible aux admins et aux médecins
    */
   @Get('email/:email')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_READ)
   findByEmail(@Param('email') email: string) {
     return this.usersService.findByEmail(email);
   }
@@ -75,7 +75,7 @@ export class UsersController {
    * Accessible aux admins et aux médecins
    */
   @Get('username/:username')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_READ)
   findByUsername(@Param('username') username: string) {
     return this.usersService.findByUsername(username);
   }
@@ -85,7 +85,7 @@ export class UsersController {
    * Accessible uniquement aux admins
    */
   @Put(':id')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_MANAGE)
   update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateUserDto) {
     return this.usersService.update(id, updateDto);
   }
@@ -95,7 +95,7 @@ export class UsersController {
    * Accessible uniquement aux admins
    */
   @Post('assign-roles')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.ROLE_ASSIGN)
   assignRoles(@Body() assignDto: AssignRoleDto) {
     return this.usersService.assignRoles(assignDto.userId, assignDto.roleNames);
   }
@@ -105,7 +105,7 @@ export class UsersController {
    * Accessible aux admins et aux médecins
    */
   @Get('roles/available')
-  @Roles('admin', 'medecin')
+  @RequirePermission(PERMISSIONS.USER_READ)
   getAvailableRoles() {
     return this.usersService.getAvailableRoles();
   }
@@ -115,7 +115,7 @@ export class UsersController {
    * Accessible uniquement aux admins
    */
   @Delete(':id')
-  @Roles('admin')
+  @RequirePermission(PERMISSIONS.USER_DELETE)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.usersService.remove(id);
   }

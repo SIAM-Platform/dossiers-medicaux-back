@@ -46,7 +46,7 @@ export class VisitesService {
     @InjectRepository(ReponseAutoDeclaration)
     private reponseRepo: Repository<ReponseAutoDeclaration>,
     private dataSource: DataSource,
-  ) { }
+  ) {}
 
   /**
    * Crée une visite médicale complète avec toutes ses entités liées.
@@ -103,7 +103,11 @@ export class VisitesService {
       await this.createOrUpdateTestDrogue(visite.id, toxicologie, queryRunner);
 
       if (auto_declaration && auto_declaration.length > 0) {
-        await this.createAutoDeclarations(visite.id, auto_declaration, queryRunner);
+        await this.createAutoDeclarations(
+          visite.id,
+          auto_declaration,
+          queryRunner,
+        );
       }
 
       await queryRunner.commitTransaction();
@@ -146,8 +150,10 @@ export class VisitesService {
         victime_guerre: infos.victime_guerre ?? false,
         accident_travail: infos.accident_travail ?? false,
         travailleur_handicape: infos.travailleur_handicape ?? false,
-        situation_matrimoniale: infos.situation_matrimoniale || marin.situation_matrimoniale,
-        activites_professionnelles: infos.activites_professionnelles || marin.activites_professionnelles,
+        situation_matrimoniale:
+          infos.situation_matrimoniale || marin.situation_matrimoniale,
+        activites_professionnelles:
+          infos.activites_professionnelles || marin.activites_professionnelles,
         adresse: infos.adresse || marin.adresse,
       });
       return queryRunner.manager.save(Marin, marin);
@@ -168,7 +174,8 @@ export class VisitesService {
     newMarin.accident_travail = infos.accident_travail ?? false;
     newMarin.travailleur_handicape = infos.travailleur_handicape ?? false;
     newMarin.situation_matrimoniale = infos.situation_matrimoniale || null;
-    newMarin.activites_professionnelles = infos.activites_professionnelles || null;
+    newMarin.activites_professionnelles =
+      infos.activites_professionnelles || null;
     newMarin.adresse = infos.adresse || null;
 
     return queryRunner.manager.save(Marin, newMarin);
@@ -286,10 +293,13 @@ export class VisitesService {
       oeil_d_vl_sans_corr: appOculaire.oeil_d_vl_sans_corr || null,
       champ_visuel_oeil_d: appOculaire.champ_visuel_resultat_d || null,
       champ_visuel_oeil_g: appOculaire.champ_visuel_resultat_g || null,
-      champ_visuel_oeil_d_commentaire: appOculaire.champ_visuel_commentaire_d || null,
-      champ_visuel_oeil_g_commentaire: appOculaire.champ_visuel_commentaire_g || null,
+      champ_visuel_oeil_d_commentaire:
+        appOculaire.champ_visuel_commentaire_d || null,
+      champ_visuel_oeil_g_commentaire:
+        appOculaire.champ_visuel_commentaire_g || null,
       perception_couleur: appOculaire.perception_couleur || null,
-      perception_couleur_commentaire: appOculaire.perception_couleur_commentaire || null,
+      perception_couleur_commentaire:
+        appOculaire.perception_couleur_commentaire || null,
       perception_couleur_date_examen: appOculaire.date_test_couleur || null,
       teguments: otherApp.teguments || null,
       moteur: otherApp.moteur || null,
@@ -306,8 +316,11 @@ export class VisitesService {
       autres: otherApp.autres || null,
       radio_pul: radio.radio_pul || false,
       resultat_radio_pul: radio.resultat_radio_pul || null,
-      date_radio_pul: radio.date_radio_pul ? new Date(radio.date_radio_pul) : null,
-      autres_examens: autreExamen.autre_examen || autreExamen.autre_examen_autre || null,
+      date_radio_pul: radio.date_radio_pul
+        ? new Date(radio.date_radio_pul)
+        : null,
+      autres_examens:
+        autreExamen.autre_examen || autreExamen.autre_examen_autre || null,
       url_scan_autre_examen: fileUrl || null,
     };
 
@@ -382,7 +395,9 @@ export class VisitesService {
         cocaine: toxicologie.cocaine || false,
         ecstasy: toxicologie.ecstasy || false,
         alcool: toxicologie.alcool || false,
-        dateAnalyse: toxicologie.dateAnalyse ? new Date(toxicologie.dateAnalyse) : null,
+        dateAnalyse: toxicologie.dateAnalyse
+          ? new Date(toxicologie.dateAnalyse)
+          : null,
         laboratoire: toxicologie.laboratoire || null,
       });
       await queryRunner.manager.save(TestDrogue, existing);
@@ -401,7 +416,9 @@ export class VisitesService {
       test.cocaine = toxicologie.cocaine || false;
       test.ecstasy = toxicologie.ecstasy || false;
       test.alcool = toxicologie.alcool || false;
-      test.dateAnalyse = toxicologie.dateAnalyse ? new Date(toxicologie.dateAnalyse) : null;
+      test.dateAnalyse = toxicologie.dateAnalyse
+        ? new Date(toxicologie.dateAnalyse)
+        : null;
       test.laboratoire = toxicologie.laboratoire || null;
 
       await queryRunner.manager.save(TestDrogue, test);
@@ -474,12 +491,15 @@ export class VisitesService {
   // -------------------- Méthodes de récupération --------------------
 
   async findAll(page: number = 1, limit: number = 10): Promise<any> {
+    // Bornes : une page ou une taille négative ou nulle faisait échouer la requête (erreur 500).
+    page = Math.max(1, Math.trunc(page) || 1);
+    limit = Math.min(10000, Math.max(1, Math.trunc(limit) || 10));
     const skip = (page - 1) * limit;
     const [data, totalCount] = await this.visiteRepo.findAndCount({
       skip,
       take: limit,
       order: { id: 'DESC' },
-      relations: { marin: true, constante: true , conclusion : true},
+      relations: { marin: true, constante: true, conclusion: true },
     });
 
     return {
@@ -528,7 +548,7 @@ export class VisitesService {
         testDrogue: true,
         typeVisite: true,
         fonction_a_bord: true,
-        type_navire: true
+        type_navire: true,
       },
       order: { date_visite: 'DESC' },
     });
@@ -562,9 +582,13 @@ export class VisitesService {
       await this.createOrUpdateConstante(visiteId, data, queryRunner);
       await queryRunner.commitTransaction();
 
-      const constante = await queryRunner.manager.findOne(Constante, { where: { visiteId } });
+      const constante = await queryRunner.manager.findOne(Constante, {
+        where: { visiteId },
+      });
       if (!constante) {
-        throw new NotFoundException(`Constante pour la visite ${visiteId} non trouvée`);
+        throw new NotFoundException(
+          `Constante pour la visite ${visiteId} non trouvée`,
+        );
       }
 
       return constante;
@@ -579,16 +603,23 @@ export class VisitesService {
   /**
    * Met à jour l'examen clinique d'une visite
    */
-  async updateExamenClinique(visiteId: number, data: any): Promise<ExamenClinique> {
+  async updateExamenClinique(
+    visiteId: number,
+    data: any,
+  ): Promise<ExamenClinique> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       // Récupérer l'existant
-      const existing = await queryRunner.manager.findOne(ExamenClinique, { where: { visiteId } });
+      const existing = await queryRunner.manager.findOne(ExamenClinique, {
+        where: { visiteId },
+      });
       if (!existing) {
-        throw new NotFoundException(`Examen clinique pour la visite ${visiteId} non trouvé`);
+        throw new NotFoundException(
+          `Examen clinique pour la visite ${visiteId} non trouvé`,
+        );
       }
 
       // Mettre à jour uniquement les champs fournis
@@ -596,9 +627,14 @@ export class VisitesService {
       await queryRunner.manager.save(ExamenClinique, existing);
       await queryRunner.commitTransaction();
 
-      const updatedExamenClinique = await queryRunner.manager.findOne(ExamenClinique, { where: { visiteId } });
+      const updatedExamenClinique = await queryRunner.manager.findOne(
+        ExamenClinique,
+        { where: { visiteId } },
+      );
       if (!updatedExamenClinique) {
-        throw new NotFoundException(`Examen clinique pour la visite ${visiteId} non trouvé après mise à jour`);
+        throw new NotFoundException(
+          `Examen clinique pour la visite ${visiteId} non trouvé après mise à jour`,
+        );
       }
 
       return updatedExamenClinique;
@@ -620,19 +656,39 @@ export class VisitesService {
 
     try {
       // Vérifier si une vaccination existe déjà
-      let vaccination = await queryRunner.manager.findOne(Vaccination, { where: { visiteId } });
+      let vaccination = await queryRunner.manager.findOne(Vaccination, {
+        where: { visiteId },
+      });
 
       if (vaccination) {
         // Mise à jour
         Object.assign(vaccination, {
-          fievre_jaune: data.fievre_jaune !== undefined ? data.fievre_jaune : vaccination.fievre_jaune,
-          date_fievre_jaune: data.date_fievre_jaune ? new Date(data.date_fievre_jaune) : vaccination.date_fievre_jaune,
-          hepatite_virale: data.hepatite_virale !== undefined ? data.hepatite_virale : vaccination.hepatite_virale,
-          date_hepatite_virale: data.date_hepatite_virale ? new Date(data.date_hepatite_virale) : vaccination.date_hepatite_virale,
-          tetanos: data.tetanos !== undefined ? data.tetanos : vaccination.tetanos,
-          date_tetanos: data.date_tetanos ? new Date(data.date_tetanos) : vaccination.date_tetanos,
-          meningite: data.meningite !== undefined ? data.meningite : vaccination.meningite,
-          date_meningite: data.date_meningite ? new Date(data.date_meningite) : vaccination.date_meningite,
+          fievre_jaune:
+            data.fievre_jaune !== undefined
+              ? data.fievre_jaune
+              : vaccination.fievre_jaune,
+          date_fievre_jaune: data.date_fievre_jaune
+            ? new Date(data.date_fievre_jaune)
+            : vaccination.date_fievre_jaune,
+          hepatite_virale:
+            data.hepatite_virale !== undefined
+              ? data.hepatite_virale
+              : vaccination.hepatite_virale,
+          date_hepatite_virale: data.date_hepatite_virale
+            ? new Date(data.date_hepatite_virale)
+            : vaccination.date_hepatite_virale,
+          tetanos:
+            data.tetanos !== undefined ? data.tetanos : vaccination.tetanos,
+          date_tetanos: data.date_tetanos
+            ? new Date(data.date_tetanos)
+            : vaccination.date_tetanos,
+          meningite:
+            data.meningite !== undefined
+              ? data.meningite
+              : vaccination.meningite,
+          date_meningite: data.date_meningite
+            ? new Date(data.date_meningite)
+            : vaccination.date_meningite,
         });
         await queryRunner.manager.save(Vaccination, vaccination);
       } else {
@@ -640,13 +696,21 @@ export class VisitesService {
         vaccination = new Vaccination();
         vaccination.visiteId = visiteId;
         vaccination.fievre_jaune = data.fievre_jaune || false;
-        vaccination.date_fievre_jaune = data.date_fievre_jaune ? new Date(data.date_fievre_jaune) : new Date(0);
+        vaccination.date_fievre_jaune = data.date_fievre_jaune
+          ? new Date(data.date_fievre_jaune)
+          : new Date(0);
         vaccination.hepatite_virale = data.hepatite_virale || false;
-        vaccination.date_hepatite_virale = data.date_hepatite_virale ? new Date(data.date_hepatite_virale) : new Date(0);
+        vaccination.date_hepatite_virale = data.date_hepatite_virale
+          ? new Date(data.date_hepatite_virale)
+          : new Date(0);
         vaccination.tetanos = data.tetanos || false;
-        vaccination.date_tetanos = data.date_tetanos ? new Date(data.date_tetanos) : new Date(0);
+        vaccination.date_tetanos = data.date_tetanos
+          ? new Date(data.date_tetanos)
+          : new Date(0);
         vaccination.meningite = data.meningite || false;
-        vaccination.date_meningite = data.date_meningite ? new Date(data.date_meningite) : new Date(0);
+        vaccination.date_meningite = data.date_meningite
+          ? new Date(data.date_meningite)
+          : new Date(0);
         await queryRunner.manager.save(Vaccination, vaccination);
       }
 
@@ -669,18 +733,26 @@ export class VisitesService {
     await queryRunner.startTransaction();
 
     try {
-      const existing = await queryRunner.manager.findOne(TestDrogue, { where: { visiteId } });
+      const existing = await queryRunner.manager.findOne(TestDrogue, {
+        where: { visiteId },
+      });
       if (!existing) {
-        throw new NotFoundException(`Test de drogue pour la visite ${visiteId} non trouvé`);
+        throw new NotFoundException(
+          `Test de drogue pour la visite ${visiteId} non trouvé`,
+        );
       }
 
       Object.assign(existing, data);
       await queryRunner.manager.save(TestDrogue, existing);
       await queryRunner.commitTransaction();
 
-      const updatedTestDrogue = await queryRunner.manager.findOne(TestDrogue, { where: { visiteId } });
+      const updatedTestDrogue = await queryRunner.manager.findOne(TestDrogue, {
+        where: { visiteId },
+      });
       if (!updatedTestDrogue) {
-        throw new NotFoundException(`Test de drogue pour la visite ${visiteId} non trouvé après mise à jour`);
+        throw new NotFoundException(
+          `Test de drogue pour la visite ${visiteId} non trouvé après mise à jour`,
+        );
       }
 
       return updatedTestDrogue;
@@ -705,13 +777,16 @@ export class VisitesService {
       await queryRunner.manager.delete(ReponseAutoDeclaration, { visiteId });
 
       // Déterminer si data est un tableau ou un objet avec une propriété reponses
-      const reponses = Array.isArray(data) ? data : (data.reponses || []);
+      const reponses = Array.isArray(data) ? data : data.reponses || [];
 
       for (const item of reponses) {
         const reponse = new ReponseAutoDeclaration();
         reponse.visiteId = visiteId;
         reponse.questionId = item.question_id;
-        reponse.reponse = item.reponse === true || item.reponse === 1 || item.reponse === 'true';
+        reponse.reponse =
+          item.reponse === true ||
+          item.reponse === 1 ||
+          item.reponse === 'true';
         reponse.commentaire = item.commentaire || null;
         await queryRunner.manager.save(ReponseAutoDeclaration, reponse);
       }
@@ -727,25 +802,42 @@ export class VisitesService {
 
   async updateRadio(visiteId: number, data: any): Promise<ExamenClinique> {
     // Récupérer l'examen clinique existant
-    const examen = await this.examenCliniqueRepo.findOne({ where: { visiteId } });
+    const examen = await this.examenCliniqueRepo.findOne({
+      where: { visiteId },
+    });
     if (!examen) {
-      throw new NotFoundException(`Examen clinique pour la visite ${visiteId} non trouvé`);
+      throw new NotFoundException(
+        `Examen clinique pour la visite ${visiteId} non trouvé`,
+      );
     }
 
     // Mettre à jour uniquement les champs radio
     Object.assign(examen, {
-      radio_pul: data.radio_pul !== undefined ? data.radio_pul : examen.radio_pul,
-      resultat_radio_pul: data.resultat_radio_pul !== undefined ? data.resultat_radio_pul : examen.resultat_radio_pul,
-      date_radio_pul: data.date_radio_pul ? new Date(data.date_radio_pul) : examen.date_radio_pul,
+      radio_pul:
+        data.radio_pul !== undefined ? data.radio_pul : examen.radio_pul,
+      resultat_radio_pul:
+        data.resultat_radio_pul !== undefined
+          ? data.resultat_radio_pul
+          : examen.resultat_radio_pul,
+      date_radio_pul: data.date_radio_pul
+        ? new Date(data.date_radio_pul)
+        : examen.date_radio_pul,
     });
 
     return this.examenCliniqueRepo.save(examen);
   }
 
-  async updateAutreExamen(visiteId: number, data: any): Promise<ExamenClinique> {
-    const examen = await this.examenCliniqueRepo.findOne({ where: { visiteId } });
+  async updateAutreExamen(
+    visiteId: number,
+    data: any,
+  ): Promise<ExamenClinique> {
+    const examen = await this.examenCliniqueRepo.findOne({
+      where: { visiteId },
+    });
     if (!examen) {
-      throw new NotFoundException(`Examen clinique pour la visite ${visiteId} non trouvé`);
+      throw new NotFoundException(
+        `Examen clinique pour la visite ${visiteId} non trouvé`,
+      );
     }
 
     // Gérer le fichier image si présent
@@ -755,7 +847,8 @@ export class VisitesService {
     }
 
     Object.assign(examen, {
-      autres_examens: data.autre_examen || data.autre_examen_autre || examen.autres_examens,
+      autres_examens:
+        data.autre_examen || data.autre_examen_autre || examen.autres_examens,
       url_scan_autre_examen: fileUrl,
     });
 
@@ -768,26 +861,35 @@ export class VisitesService {
    * - 'apte' ou 'inapte' → 'terminé'
    * - 'demande_examens_complementaires' → 'attente_examens'
    */
-  async updateConclusion(visiteId: number, data: UpdateConclusionDto): Promise<Conclusion> {
+  async updateConclusion(
+    visiteId: number,
+    data: UpdateConclusionDto,
+  ): Promise<Conclusion> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
       // 1. Vérifier que la visite existe
-      const visite = await queryRunner.manager.findOne(VisiteMedicale, { where: { id: visiteId } });
+      const visite = await queryRunner.manager.findOne(VisiteMedicale, {
+        where: { id: visiteId },
+      });
       if (!visite) {
         throw new NotFoundException(`Visite #${visiteId} non trouvée`);
       }
 
       // 2. Gérer la conclusion
-      let conclusion = await queryRunner.manager.findOne(Conclusion, { where: { visiteId } });
+      let conclusion = await queryRunner.manager.findOne(Conclusion, {
+        where: { visiteId },
+      });
       if (conclusion) {
         // Mise à jour
         conclusion.decision = data.decision;
-        if (data.commentaires !== undefined) conclusion.commentaires = data.commentaires;
+        if (data.commentaires !== undefined)
+          conclusion.commentaires = data.commentaires;
         if (data.medecin_id) conclusion.medecinId = data.medecin_id;
-        if (data.date_conclusion) conclusion.date_conclusion = new Date(data.date_conclusion);
+        if (data.date_conclusion)
+          conclusion.date_conclusion = new Date(data.date_conclusion);
         await queryRunner.manager.save(Conclusion, conclusion);
       } else {
         // Création
@@ -795,7 +897,9 @@ export class VisitesService {
         conclusion.visiteId = visiteId;
         conclusion.decision = data.decision;
         conclusion.medecinId = (data.medecin_id ?? null) as unknown as string;
-        conclusion.date_conclusion = data.date_conclusion ? new Date(data.date_conclusion) : new Date();
+        conclusion.date_conclusion = data.date_conclusion
+          ? new Date(data.date_conclusion)
+          : new Date();
         conclusion.commentaires = data.commentaires ?? '';
         await queryRunner.manager.save(Conclusion, conclusion);
       }
