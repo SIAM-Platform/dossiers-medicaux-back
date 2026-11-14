@@ -23,6 +23,7 @@ export async function prepareEncryptedColumns(
   const mysql = isMysql(ds);
   const changed: string[] = [];
   for (const c of encryptedColumns(ds)) {
+    if (c.json) continue; // colonne JSON : l'objet chiffré reste du JSON ({ "enc": "…" }), type inchangé
     const [info] = await run<{
       data_type?: string;
       DATA_TYPE?: string;
@@ -89,23 +90,35 @@ export async function encryptPlaintext(
 ): Promise<number> {
   let total = 0;
   for (const c of encryptedColumns(ds)) {
-    if (c.json) continue;
     const t = ident(ds, c.table);
     const col = ident(ds, c.column);
     const pk = c.primaryKeys.map((k) => ident(ds, k)).join(', ');
     for (;;) {
       const n = await ds.transaction(async (m) => {
+        const pending = c.json
+          ? isMysql(ds)
+            ? `JSON_EXTRACT(${col}, '$.enc') IS NULL`
+            : `NOT (jsonb_typeof(${col}::jsonb) = 'object' AND ${col}::jsonb ? 'enc')`
+          : `${col} <> '' AND ${col} NOT LIKE 'enc:%'`;
         const rows = await run<Record<string, unknown>>(
           ds,
           m,
-          `SELECT ${pk}, ${col} AS v FROM ${t} WHERE ${col} IS NOT NULL AND ${col} <> '' AND ${col} NOT LIKE 'enc:%' LIMIT ${batch} FOR UPDATE`,
+          `SELECT ${pk}, ${col} AS v FROM ${t} WHERE ${col} IS NOT NULL AND ${pending} LIMIT ${batch} FOR UPDATE`,
         );
         for (const r of rows) {
           const where = c.primaryKeys
             .map((k, i) => `${ident(ds, k)} = $${i + 2}`)
             .join(' AND ');
+          const plain = c.json
+            ? typeof r.v === 'string'
+              ? r.v
+              : JSON.stringify(r.v)
+            : String(r.v);
+          const next = c.json
+            ? JSON.stringify({ enc: encrypt(plain) })
+            : encrypt(plain);
           await run(ds, m, `UPDATE ${t} SET ${col} = $1 WHERE ${where}`, [
-            encrypt(String(r.v)),
+            next,
             ...c.primaryKeys.map((k) => r[k]),
           ]);
         }
