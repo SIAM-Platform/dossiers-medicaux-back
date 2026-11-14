@@ -23,10 +23,8 @@ describe('Catalogue et attribution par défaut des permissions', () => {
     expect(new Set(all).size).toBe(all.length);
   });
 
-  it("seul l'administrateur gère les comptes, les rôles et la matrice", () => {
+  it("seul l'administrateur supprime des comptes et modifie la matrice", () => {
     const admin: string[] = [
-      PERMISSIONS.USER_MANAGE,
-      PERMISSIONS.ROLE_ASSIGN,
       PERMISSIONS.USER_DELETE,
       PERMISSIONS.PERMISSION_MANAGE,
     ].map((p) => p.code);
@@ -34,6 +32,15 @@ describe('Catalogue et attribution par défaut des permissions', () => {
       (r) => r !== 'admin',
     )) {
       expect(codes(role).filter((c) => admin.includes(c))).toEqual([]);
+    }
+  });
+
+  it("anti-escalade : chaque rôle non admin a moins de droits que l'admin", () => {
+    for (const role of Object.keys(DEFAULT_ROLE_PERMISSIONS).filter(
+      (r) => r !== 'admin' && r !== 'PRIVACY_OFFICER',
+    )) {
+      expect(codes(role).every((c) => codes('admin').includes(c))).toBe(true);
+      expect(codes(role).length).toBeLessThan(codes('admin').length);
     }
   });
 

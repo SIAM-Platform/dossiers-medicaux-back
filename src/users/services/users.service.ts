@@ -161,7 +161,11 @@ export class UsersService {
       }
     }
 
-    Object.assign(user, updateDto);
+    // Seuls ces champs sont modifiables ici (les rôles passent par l'attribution, contrôlée) :
+    // recopier tout le corps permettait d'écrire `roles`, `username` ou `keycloakId`.
+    if (updateDto.firstName !== undefined) user.firstName = updateDto.firstName;
+    if (updateDto.lastName !== undefined) user.lastName = updateDto.lastName;
+    if (updateDto.email !== undefined) user.email = updateDto.email;
     return this.userRepository.save(user);
   }
 

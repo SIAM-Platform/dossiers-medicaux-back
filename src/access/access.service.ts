@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
   NotFoundException,
@@ -72,6 +73,34 @@ export class AccessService implements OnApplicationBootstrap {
     return [
       ...new Set(rows.map((r) => r.permission).filter((c) => KNOWN.has(c))),
     ].sort();
+  }
+
+  /** Permissions effectives que donneraient des rôles (par nom). */
+  async permissionsOfRoleNames(names: string[]): Promise<string[]> {
+    if (!names.length) return [];
+    const roles = await this.ds
+      .getRepository(Role)
+      .find({ where: { name: In(names) } });
+    return this.permissionsOf(roles.map((r) => r.id));
+  }
+
+  /**
+   * Règle anti-escalade : on ne peut attribuer des rôles, ni gérer un compte, qui donnent une
+   * permission que l'on n'a pas soi-même (un médecin ne peut ni se donner le rôle admin, ni
+   * modifier ou supprimer un compte administrateur).
+   */
+  assertWithinOwnRights(
+    actorPermissions: string[],
+    granted: string[],
+    what: string,
+  ): void {
+    const beyond = granted.filter((p) => !actorPermissions.includes(p));
+    if (beyond.length) {
+      throw new ForbiddenException({
+        code: 'PRIVILEGE_ESCALATION',
+        message: `${what} : impossible de donner ou de gérer des droits que vous n'avez pas (${beyond.join(', ')})`,
+      });
+    }
   }
 
   /** Matrice complète : catalogue, rôles et leurs permissions. */

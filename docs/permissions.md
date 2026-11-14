@@ -29,14 +29,17 @@ attribution modifiée ensuite par l'administration n'est jamais écrasée.
 | Créer ou modifier un référentiel | ✓ | ✓ | | |
 | Lister les infirmiers | ✓ | ✓ | | ✓ |
 | Fiches des médecins et infirmiers (consulter, créer, modifier) | ✓ | ✓ | | |
-| Supprimer un marin, une visite, un référentiel, une fiche | ✓ | | | |
-| **Comptes et rôles**, matrice des permissions | ✓ | | | |
+| Comptes : consulter, créer, modifier, attribuer des rôles (règle anti-escalade) | ✓ | ✓ | | |
+| Supprimer un marin, une visite, un référentiel, une fiche, un compte | ✓ | | | |
+| Matrice des permissions | ✓ | | | |
 | Journal d'audit, RGPD | ✓ (et `PRIVACY_OFFICER`) | | | |
 
 Cette attribution reproduit exactement les accès de la version précédente, vérifiés route par
-route par le banc avant/après, à une exception près, voulue : **la gestion des comptes et
-l'attribution des rôles sont réservées à l'administrateur**. Un médecin pouvait jusqu'ici créer
-des comptes et se donner le rôle admin ; l'interface ne lui proposait déjà pas cet écran.
+route par le banc avant/après. L'écran « Administration » des comptes reste ouvert au médecin,
+mais une **règle anti-escalade** s'applique désormais à tous : on ne peut attribuer un rôle, ni
+modifier ou supprimer un compte, qui donne une permission que l'on n'a pas soi-même. Un médecin
+gère donc les comptes des infirmiers et des médecins, mais ne peut ni se donner le rôle admin ni
+toucher à un compte administrateur.
 
 ## Corrections faites au passage (constatées par le banc)
 
@@ -47,7 +50,9 @@ des comptes et se donner le rôle admin ; l'interface ne lui proposait déjà pa
 | Question d'auto-déclaration saisie depuis l'écran | erreur 500 (noms de champs différents) | enregistrée |
 | Question rattachée à une catégorie inexistante | erreur 500 | 422 |
 | Liste des visites sans pagination, ou pagination négative | 400 / erreur 500 | valeurs par défaut, bornes |
-| Médecin : comptes, rôles | autorisé | refusé (403) |
+| Médecin : se donner le rôle admin (attribution, création, ou champ `roles` glissé dans `PUT /users/:id`) | possible (vérifié par le banc) | refusé (403) ou ignoré |
+| Médecin : modifier un compte administrateur | possible | refusé (403) |
+| Modifier le prénom d'un compte | effaçait le nom et l'e-mail | seuls les champs envoyés changent |
 
 Les erreurs sont au format `application/problem+json` du socle ; les champs `message` et
 `statusCode` restent présents pour l'interface.

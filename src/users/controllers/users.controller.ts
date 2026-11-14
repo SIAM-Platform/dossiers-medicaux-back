@@ -10,11 +10,15 @@ import {
   Param,
   Put,
   Delete,
-  UseGuards,
   ParseIntPipe,
   Request,
 } from '@nestjs/common';
 import { UsersService } from '../services/users.service';
+import { AccessService } from '../../access/access.service';
+
+interface ActorRequest {
+  user?: { permissions?: string[]; localUser?: unknown };
+}
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { AssignRoleDto } from '../dto/assign-role.dto';
 import { CreateUserDto } from '../dto/create-user.dto';
@@ -23,7 +27,10 @@ import { PERMISSIONS } from '../../access/permissions';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly access: AccessService,
+  ) {}
 
   /**
    * Récupère l'utilisateur connecté (profil local)
@@ -36,7 +43,11 @@ export class UsersController {
 
   @Post()
   @RequirePermission(PERMISSIONS.USER_MANAGE)
-  async createUser(@Body() createUserDto: CreateUserDto) {
+  async createUser(
+    @Body() createUserDto: CreateUserDto,
+    @Request() req: ActorRequest,
+  ) {
+    await this.checkGrant(req, createUserDto.roles ?? [], 'Création du compte');
     return this.usersService.createUser(createUserDto);
   }
 
@@ -86,7 +97,12 @@ export class UsersController {
    */
   @Put(':id')
   @RequirePermission(PERMISSIONS.USER_MANAGE)
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateDto: UpdateUserDto) {
+  async update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: UpdateUserDto,
+    @Request() req: ActorRequest,
+  ) {
+    await this.checkTarget(req, id, 'Modification du compte');
     return this.usersService.update(id, updateDto);
   }
 
@@ -96,7 +112,12 @@ export class UsersController {
    */
   @Post('assign-roles')
   @RequirePermission(PERMISSIONS.ROLE_ASSIGN)
-  assignRoles(@Body() assignDto: AssignRoleDto) {
+  async assignRoles(
+    @Body() assignDto: AssignRoleDto,
+    @Request() req: ActorRequest,
+  ) {
+    await this.checkTarget(req, assignDto.userId, 'Attribution de rôles');
+    await this.checkGrant(req, assignDto.roleNames, 'Attribution de rôles');
     return this.usersService.assignRoles(assignDto.userId, assignDto.roleNames);
   }
 
@@ -116,7 +137,34 @@ export class UsersController {
    */
   @Delete(':id')
   @RequirePermission(PERMISSIONS.USER_DELETE)
-  remove(@Param('id', ParseIntPipe) id: number) {
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Request() req: ActorRequest,
+  ) {
+    await this.checkTarget(req, id, 'Suppression du compte');
     return this.usersService.remove(id);
+  }
+
+  /** Les rôles attribués ne donnent pas plus de droits que ceux de l'auteur (anti-escalade). */
+  private async checkGrant(
+    req: ActorRequest,
+    roleNames: string[],
+    what: string,
+  ) {
+    const granted = await this.access.permissionsOfRoleNames(roleNames);
+    this.access.assertWithinOwnRights(
+      req.user?.permissions ?? [],
+      granted,
+      what,
+    );
+  }
+
+  /** Le compte visé n'a pas plus de droits que l'auteur (un médecin ne gère pas un administrateur). */
+  private async checkTarget(req: ActorRequest, userId: number, what: string) {
+    const target = await this.usersService.findOne(userId);
+    const held = await this.access.permissionsOf(
+      (target.roles ?? []).map((r) => r.id),
+    );
+    this.access.assertWithinOwnRights(req.user?.permissions ?? [], held, what);
   }
 }

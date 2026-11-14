@@ -4,9 +4,10 @@
  * donnée en base, table `role_permission`, modifiable par l'administration).
  *
  * L'attribution par défaut reproduit exactement les accès de la version précédente (décorateurs
- * @Roles), vérifiés route par route par le banc avant/après, à une exception près, voulue : la
- * gestion des comptes et l'attribution des rôles sont réservées à l'administrateur (un médecin
- * pouvait jusqu'ici se donner le rôle admin ; l'interface ne lui offrait déjà pas cet écran).
+ * @Roles), vérifiés route par route par le banc avant/après. La gestion des comptes reste ouverte
+ * au médecin (écran « Administration »), mais une règle anti-escalade s'applique à tous : on ne
+ * peut attribuer un rôle, ni gérer un compte, qui donne plus de droits que les siens (un médecin
+ * ne peut plus se donner le rôle admin ni modifier un compte administrateur).
  */
 export interface PermissionDefinition {
   code: string;
@@ -170,6 +171,10 @@ const MEDECIN = [
   P.INFIRMIER_LIST,
   P.PERSONNEL_READ,
   P.PERSONNEL_MANAGE,
+  // Écran « Administration » des comptes (borné par la règle anti-escalade).
+  P.USER_READ,
+  P.USER_MANAGE,
+  P.ROLE_ASSIGN,
 ];
 
 /**
@@ -184,9 +189,6 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, PermissionDefinition[]> =
       P.VISITE_DELETE,
       P.REFERENTIEL_DELETE,
       P.PERSONNEL_DELETE,
-      P.USER_READ,
-      P.USER_MANAGE,
-      P.ROLE_ASSIGN,
       P.USER_DELETE,
       P.PERMISSION_READ,
       P.PERMISSION_MANAGE,
