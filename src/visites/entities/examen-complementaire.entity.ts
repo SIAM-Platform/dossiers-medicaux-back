@@ -1,3 +1,4 @@
+import { encrypted } from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -14,10 +15,10 @@ export class ExamenComplementaire {
     @JoinColumn({ name: 'visite_id' })
     visite!: VisiteMedicale;
 
-    @Column({ name: 'type_exam', length: 191 })
+    @Column({ name: 'type_exam', type: 'text', nullable: true, transformer: encrypted })
     type_exam!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     resultat!: string;
 
     @Column({ name: 'date_examen', type: 'datetime', nullable: true })

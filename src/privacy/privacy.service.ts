@@ -116,6 +116,17 @@ export class PrivacyService implements OnModuleInit, OnApplicationShutdown {
     );
   }
 
+  /** Événement système (administration des clés…) inscrit au journal RGPD en ajout seul. */
+  async recordSystemEvent(
+    action: string,
+    entityType: string,
+    entityId: string | null,
+    summary: string,
+    context: unknown,
+  ): Promise<void> {
+    await this.audit(null, action, entityType, entityId, summary, { context });
+  }
+
   // -------------------------------------------------------------- Registre
 
   private async overrides(): Promise<

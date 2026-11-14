@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Marin } from '../entities/marin.entity';
 import { CreateMarinDto } from '../dto/create-marin.dto';
+import { marinIndex } from '../marin-index';
 import { UpdateMarinDto } from '../dto/update-marin.dto';
 
 @Injectable()
@@ -28,13 +29,13 @@ export class MarinsService {
   }
 
   async findByNumeroInsMar(numero_ins_mar: string): Promise<Marin> {
-    const marin = await this.marinRepo.findOne({ where: { numero_ins_mar } });
+    const marin = await this.marinRepo.findOne({ where: { numero_ins_mar_index: marinIndex.nim(numero_ins_mar) ?? '' } });
     if (!marin) throw new NotFoundException(`Marin with numero_ins_mar ${numero_ins_mar} not found`);
     return marin;
   }
 
   async findByNumeroCni(numero_cni: string): Promise<Marin> {
-    const marin = await this.marinRepo.findOne({ where: { numero_cni } });
+    const marin = await this.marinRepo.findOne({ where: { numero_cni_index: marinIndex.cni(numero_cni) ?? '' } });
     if (!marin) throw new NotFoundException(`Marin with numero_cni ${numero_cni} not found`);
     return marin;
   }
@@ -43,7 +44,7 @@ export class MarinsService {
     // Vérifier l'unicité du numéro d'inscription maritime s'il est fourni
     if (createDto.numero_ins_mar) {
       const existing = await this.marinRepo.findOne({
-        where: { numero_ins_mar: createDto.numero_ins_mar },
+        where: { numero_ins_mar_index: marinIndex.nim(createDto.numero_ins_mar) ?? '' },
       });
       if (existing) {
         throw new ConflictException(
@@ -55,7 +56,7 @@ export class MarinsService {
     // Vérifier l'unicité du CNI s'il est fourni
     if (createDto.numero_cni) {
       const existing = await this.marinRepo.findOne({
-        where: { numero_cni: createDto.numero_cni },
+        where: { numero_cni_index: marinIndex.cni(createDto.numero_cni) ?? '' },
       });
       if (existing) {
         throw new ConflictException(
@@ -80,7 +81,7 @@ export class MarinsService {
     // Si mise à jour du numéro d'inscription, vérifier l'unicité
     if (updateDto.numero_ins_mar && updateDto.numero_ins_mar !== marin.numero_ins_mar) {
       const existing = await this.marinRepo.findOne({
-        where: { numero_ins_mar: updateDto.numero_ins_mar },
+        where: { numero_ins_mar_index: marinIndex.nim(updateDto.numero_ins_mar) ?? '' },
       });
       if (existing) {
         throw new ConflictException(
@@ -91,7 +92,7 @@ export class MarinsService {
 
     if (updateDto.numero_cni && updateDto.numero_cni !== marin.numero_cni) {
       const existing = await this.marinRepo.findOne({
-        where: { numero_cni: updateDto.numero_cni },
+        where: { numero_cni_index: marinIndex.cni(updateDto.numero_cni) ?? '' },
       });
       if (existing) {
         throw new ConflictException(
@@ -114,13 +115,21 @@ export class MarinsService {
     await this.marinRepo.remove(marin);
   }
 
-  // Recherche par nom ou prénom (optionnel)
+  /**
+   * Recherche par nom, prénom (partiel, 3 caractères au moins), numéro d'inscription maritime ou CNI
+   * (exacts). Les données sont chiffrées : la recherche porte sur les index aveugles, jamais sur une
+   * valeur en clair.
+   */
   async search(query: string): Promise<Marin[]> {
-    return this.marinRepo
-      .createQueryBuilder('marin')
-      .where('marin.nom LIKE :query', { query: `%${query}%` })
-      .orWhere('marin.prenom LIKE :query', { query: `%${query}%` })
-      .orWhere('marin.numero_ins_mar LIKE :query', { query: `%${query}%` })
-      .getMany();
+    const q = (query ?? '').trim();
+    if (!q) return [];
+    const qb = this.marinRepo.createQueryBuilder('marin').where('marin.numero_ins_mar_index = :nim', { nim: marinIndex.nim(q) }).orWhere('marin.numero_cni_index = :cni', { cni: marinIndex.cni(q) });
+    const tokens = q.replace(/[^\p{L}\p{N}]/gu, '').length >= 3 ? marinIndex.term(q) : [];
+    if (tokens.length) {
+      // Tous les trigrammes du terme présents dans le nom complet = le nom contient le terme.
+      const all = tokens.map((t, i) => `CONCAT(' ', marin.nom_index, ' ') LIKE :t${i}`).join(' AND ');
+      qb.orWhere(`(${all})`, Object.fromEntries(tokens.map((t, i) => [`t${i}`, `% ${t} %`])));
+    }
+    return qb.limit(200).getMany();
   }
 }

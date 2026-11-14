@@ -25,6 +25,7 @@ import { CreateVisiteDto } from '../dto/create-visite.dto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { Conclusion } from '../entities/conclusion.entity';
+import { marinIndex } from '../../marins/marin-index';
 import { UpdateConclusionDto } from '../entities/update-conclusion.dto';
 
 @Injectable()
@@ -123,12 +124,12 @@ export class VisitesService {
     let marin: Marin | null = null;
     if (infos.cni) {
       marin = await queryRunner.manager.findOne(Marin, {
-        where: { numero_cni: infos.cni },
+        where: { numero_cni_index: marinIndex.cni(infos.cni) ?? '' },
       });
     }
     if (!marin && infos.nim) {
       marin = await queryRunner.manager.findOne(Marin, {
-        where: { numero_ins_mar: infos.nim },
+        where: { numero_ins_mar_index: marinIndex.nim(infos.nim) ?? '' },
       });
     }
 

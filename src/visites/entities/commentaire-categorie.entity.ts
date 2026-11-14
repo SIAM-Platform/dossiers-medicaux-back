@@ -1,3 +1,4 @@
+import { encrypted } from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -22,6 +23,6 @@ export class CommentaireCategorie {
     @JoinColumn({ name: 'categorie_id' })
     categorie!: CategorieAutoDeclaration;
 
-    @Column({ length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     commentaire!: string;
 }

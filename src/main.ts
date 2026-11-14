@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { NestFactory } from '@nestjs/core';
@@ -9,8 +8,11 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { json, urlencoded } from 'express';
+import { loadSecrets } from './privacy/secrets';
 
 async function bootstrap() {
+  // Secrets lus depuis le coffre (Vault), des fichiers montés (NOM_FILE) ou l'environnement, avant tout le reste.
+  await loadSecrets(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   

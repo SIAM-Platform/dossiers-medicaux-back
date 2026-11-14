@@ -1,3 +1,8 @@
+import {
+  encrypted,
+  encryptedBoolean,
+  encryptedDate,
+} from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -24,73 +29,73 @@ export class ExamenClinique {
     medecin!: Medecin; */
 
     // Tous les champs de l'examen clinique
-    @Column({ nullable: true })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     prothese!: boolean;
 
-    @Column({ name: 'oeil_g_vp_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_g_vp_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_g_vp_corr!: string;
 
-    @Column({ name: 'oeil_d_vp_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_d_vp_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_d_vp_corr!: string;
 
-    @Column({ name: 'oeil_g_vl_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_g_vl_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_g_vl_corr!: string;
 
-    @Column({ name: 'oeil_d_vl_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_d_vl_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_d_vl_corr!: string;
 
-    @Column({ name: 'oeil_g_vp_sans_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_g_vp_sans_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_g_vp_sans_corr!: string;
 
-    @Column({ name: 'oeil_d_vp_sans_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_d_vp_sans_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_d_vp_sans_corr!: string;
 
-    @Column({ name: 'oeil_g_vl_sans_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_g_vl_sans_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_g_vl_sans_corr!: string;
 
-    @Column({ name: 'oeil_d_vl_sans_corr', nullable: true, length: 191 })
+    @Column({ name: 'oeil_d_vl_sans_corr', type: 'text', nullable: true, transformer: encrypted })
     oeil_d_vl_sans_corr!: string;
 
-    @Column({ name: 'perception_couleur', nullable: true, length: 191 })
+    @Column({ name: 'perception_couleur', type: 'text', nullable: true, transformer: encrypted })
     perception_couleur!: string;
 
-    @Column({ name: 'perception_couleur_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'perception_couleur_commentaire', type: 'text', nullable: true, transformer: encrypted })
     perception_couleur_commentaire!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     teguments!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     moteur!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     endocrine!: string;
 
-    @Column({ name: 'rhino_pharynx', nullable: true, length: 191 })
+    @Column({ name: 'rhino_pharynx', type: 'text', nullable: true, transformer: encrypted })
     rhino_pharynx!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     respiratoire!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     urinaire!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     cardiovasculaire!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     genital!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     digestif!: string;
 
-    @Column({ name: 'systeme_nerveux', nullable: true, length: 191 })
+    @Column({ name: 'systeme_nerveux', type: 'text', nullable: true, transformer: encrypted })
     systeme_nerveux!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     hematologique!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     psychisme!: string;
 
     @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
@@ -100,116 +105,116 @@ export class ExamenClinique {
     // Je vous laisse les copier depuis l'ancien fichier
     // Mais voici les plus importants :
 
-    @Column({ name: 'autres_examens', nullable: true, length: 191 })
+    @Column({ name: 'autres_examens', type: 'text', nullable: true, transformer: encrypted })
     autres_examens!: string;
 
-    @Column({ name: 'ch_od', nullable: true, length: 191 })
+    @Column({ name: 'ch_od', type: 'text', nullable: true, transformer: encrypted })
     ch_od!: string;
 
-    @Column({ name: 'ch_og', nullable: true, length: 191 })
+    @Column({ name: 'ch_og', type: 'text', nullable: true, transformer: encrypted })
     ch_og!: string;
 
-    @Column({ name: 'champ_visuel_oeil_d', nullable: true, length: 191 })
+    @Column({ name: 'champ_visuel_oeil_d', type: 'text', nullable: true, transformer: encrypted })
     champ_visuel_oeil_d!: string;
 
-    @Column({ name: 'champ_visuel_oeil_g', nullable: true, length: 191 })
+    @Column({ name: 'champ_visuel_oeil_g', type: 'text', nullable: true, transformer: encrypted })
     champ_visuel_oeil_g!: string;
 
-    @Column({ name: 'date_radio_pul', type: 'datetime', nullable: true })
+    @Column({ name: 'date_radio_pul', type: 'text', nullable: true, transformer: encryptedDate })
     date_radio_pul!: Date | null;
 
-    @Column({ name: 'parole_od', nullable: true, length: 191 })
+    @Column({ name: 'parole_od', type: 'text', nullable: true, transformer: encrypted })
     parole_od!: string;
 
-    @Column({ name: 'parole_og', nullable: true, length: 191 })
+    @Column({ name: 'parole_og', type: 'text', nullable: true, transformer: encrypted })
     parole_og!: string;
 
-    @Column({ name: 'radio_pul', default: false })
-    radio_pul!: boolean;
+    @Column({ name: 'radio_pul', type: 'text', nullable: true, transformer: encryptedBoolean })
+    radio_pul: boolean = false;
 
-    @Column({ name: 'resultat_autres_examens', nullable: true, length: 191 })
+    @Column({ name: 'resultat_autres_examens', type: 'text', nullable: true, transformer: encrypted })
     resultat_autres_examens!: string;
 
-    @Column({ name: 'resultat_radio_pul', nullable: true, length: 191 })
+    @Column({ name: 'resultat_radio_pul', type: 'text', nullable: true, transformer: encrypted })
     resultat_radio_pul!: string;
 
     // Commentaires
-    @Column({ name: 'cardiovasculaire_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'cardiovasculaire_commentaire', type: 'text', nullable: true, transformer: encrypted })
     cardiovasculaire_commentaire!: string;
 
-    @Column({ name: 'digestif_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'digestif_commentaire', type: 'text', nullable: true, transformer: encrypted })
     digestif_commentaire!: string;
 
-    @Column({ name: 'endocrine_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'endocrine_commentaire', type: 'text', nullable: true, transformer: encrypted })
     endocrine_commentaire!: string;
 
-    @Column({ name: 'genital_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'genital_commentaire', type: 'text', nullable: true, transformer: encrypted })
     genital_commentaire!: string;
 
-    @Column({ name: 'hematologique_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'hematologique_commentaire', type: 'text', nullable: true, transformer: encrypted })
     hematologique_commentaire!: string;
 
-    @Column({ name: 'moteur_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'moteur_commentaire', type: 'text', nullable: true, transformer: encrypted })
     moteur_commentaire!: string;
 
-    @Column({ name: 'psychisme_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'psychisme_commentaire', type: 'text', nullable: true, transformer: encrypted })
     psychisme_commentaire!: string;
 
-    @Column({ name: 'respiratoire_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'respiratoire_commentaire', type: 'text', nullable: true, transformer: encrypted })
     respiratoire_commentaire!: string;
 
-    @Column({ name: 'rhino_pharynx_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'rhino_pharynx_commentaire', type: 'text', nullable: true, transformer: encrypted })
     rhino_pharynx_commentaire!: string;
 
-    @Column({ name: 'systeme_nerveux_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'systeme_nerveux_commentaire', type: 'text', nullable: true, transformer: encrypted })
     systeme_nerveux_commentaire!: string;
 
-    @Column({ name: 'teguments_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'teguments_commentaire', type: 'text', nullable: true, transformer: encrypted })
     teguments_commentaire!: string;
 
-    @Column({ name: 'urinaire_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'urinaire_commentaire', type: 'text', nullable: true, transformer: encrypted })
     urinaire_commentaire!: string;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     autres!: string;
 
-    @Column({ name: 'autres_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'autres_commentaire', type: 'text', nullable: true, transformer: encrypted })
     autres_commentaire!: string;
 
-    @Column({ name: 'champ_visuel_oeil_d_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'champ_visuel_oeil_d_commentaire', type: 'text', nullable: true, transformer: encrypted })
     champ_visuel_oeil_d_commentaire!: string;
 
-    @Column({ name: 'champ_visuel_oeil_g_commentaire', nullable: true, length: 191 })
+    @Column({ name: 'champ_visuel_oeil_g_commentaire', type: 'text', nullable: true, transformer: encrypted })
     champ_visuel_oeil_g_commentaire!: string;
 
     // Audiométrie
-    @Column({ name: 'd_1000hz', nullable: true, length: 191 })
+    @Column({ name: 'd_1000hz', type: 'text', nullable: true, transformer: encrypted })
     d_1000hz!: string;
 
-    @Column({ name: 'd_2000hz', nullable: true, length: 191 })
+    @Column({ name: 'd_2000hz', type: 'text', nullable: true, transformer: encrypted })
     d_2000hz!: string;
 
-    @Column({ name: 'd_3000hz', nullable: true, length: 191 })
+    @Column({ name: 'd_3000hz', type: 'text', nullable: true, transformer: encrypted })
     d_3000hz!: string;
 
-    @Column({ name: 'd_500hz', nullable: true, length: 191 })
+    @Column({ name: 'd_500hz', type: 'text', nullable: true, transformer: encrypted })
     d_500hz!: string;
 
-    @Column({ name: 'g_1000hz', nullable: true, length: 191 })
+    @Column({ name: 'g_1000hz', type: 'text', nullable: true, transformer: encrypted })
     g_1000hz!: string;
 
-    @Column({ name: 'g_2000hz', nullable: true, length: 191 })
+    @Column({ name: 'g_2000hz', type: 'text', nullable: true, transformer: encrypted })
     g_2000hz!: string;
 
-    @Column({ name: 'g_3000hz', nullable: true, length: 191 })
+    @Column({ name: 'g_3000hz', type: 'text', nullable: true, transformer: encrypted })
     g_3000hz!: string;
 
-    @Column({ name: 'g_500hz', nullable: true, length: 191 })
+    @Column({ name: 'g_500hz', type: 'text', nullable: true, transformer: encrypted })
     g_500hz!: string;
 
-    @Column({ name: 'perception_couleur_date_examen', nullable: true, length: 191 })
+    @Column({ name: 'perception_couleur_date_examen', type: 'text', nullable: true, transformer: encrypted })
     perception_couleur_date_examen!: string;
 
-    @Column({ name: 'url_scan_autre_examen', nullable: true, length: 191 })
+    @Column({ name: 'url_scan_autre_examen', type: 'text', nullable: true, transformer: encrypted })
     url_scan_autre_examen!: string;
 }

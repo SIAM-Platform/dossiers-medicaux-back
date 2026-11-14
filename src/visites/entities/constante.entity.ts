@@ -1,3 +1,8 @@
+import {
+  encrypted,
+  encryptedBoolean,
+  encryptedNumber,
+} from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -21,39 +26,39 @@ export class Constante {
     @JoinColumn({ name: 'infirmier_id' })
     infirmier!: Infirmier;*/
 
-    @Column({ name: 'taille_cm' })
+    @Column({ name: 'taille_cm', type: 'text', nullable: true, transformer: encryptedNumber })
     taille_cm!: number;
 
-    @Column({ name: 'poids_kg' })
+    @Column({ name: 'poids_kg', type: 'text', nullable: true, transformer: encryptedNumber })
     poids_kg!: number;
 
-    @Column({ type: 'double' })
+    @Column({ type: 'text', nullable: true, transformer: encryptedNumber })
     imc!: number;
 
-    @Column({ name: 'frequence_respiratoire' })
+    @Column({ name: 'frequence_respiratoire', type: 'text', nullable: true, transformer: encryptedNumber })
     frequence_respiratoire!: number;
 
     @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
     date_prise!: Date;
 
-    @Column({ length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     albumine!: string;
 
-    @Column({ length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     diastolique!: string;
 
-    @Column({ length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     sucre!: string;
 
-    @Column({ length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     systolique!: string;
 
-    @Column({ default: 0 })
+    @Column({ type: 'text', nullable: true, transformer: encryptedNumber })
     pouls!: number;
 
-    @Column({ type: 'double', nullable: true })
+    @Column({ type: 'text', nullable: true, transformer: encryptedNumber })
     temperature!: number;
 
-    @Column({ name: 'test_grossesse', default: false })
+    @Column({ name: 'test_grossesse', type: 'text', nullable: true, transformer: encryptedBoolean })
     test_grossesse: boolean = false;
 }

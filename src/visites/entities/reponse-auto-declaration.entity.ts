@@ -1,3 +1,4 @@
+import { encrypted, encryptedBoolean } from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -22,9 +23,9 @@ export class ReponseAutoDeclaration {
     @JoinColumn({ name: 'question_id' })
     question!: QuestionAutoDeclaration;
 
-    @Column({ default: false })
-    reponse!: boolean;
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
+    reponse: boolean = false;
 
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     commentaire!: string;
 }

@@ -1,3 +1,8 @@
+import {
+  encrypted,
+  encryptedBoolean,
+  encryptedDate,
+} from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -14,30 +19,30 @@ export class TestDrogue {
     @JoinColumn({ name: 'visite_id' })
     visite!: VisiteMedicale ;
 
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     benzodiazepines: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     methadone: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     phencyclidine: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     cannabisTHC: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     amphetamines: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     methamphetamines: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     barbituriques: boolean = false;
-    @Column({ name: 'morphineOpiaces', default: false })
+    @Column({ name: 'morphineOpiaces', type: 'text', nullable: true, transformer: encryptedBoolean })
     morphineOpiaces: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     cocaine: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     ecstasy: boolean = false;
-    @Column({ default: false })
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
     alcool: boolean = false;
-    @Column({ name: 'dateAnalyse', type: 'datetime', nullable: true })
+    @Column({ name: 'dateAnalyse', type: 'text', nullable: true, transformer: encryptedDate })
     dateAnalyse!: Date | null;
-    @Column({ nullable: true, length: 191 })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     laboratoire!: string;
 }

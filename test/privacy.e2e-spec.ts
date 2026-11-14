@@ -180,7 +180,7 @@ class TestAuth implements CanActivate {
         : 'SELECT subject_ref FROM privacy_requests WHERE id = $1',
       [created.body.id],
     )) as { subject_ref: string }[];
-    expect(row.subject_ref.startsWith('enc:v1:')).toBe(true);
+    expect(row.subject_ref.startsWith('enc:v2:')).toBe(true);
     await request(app.getHttpServer())
       .patch(`/privacy/requests/${created.body.id}`)
       .set(dpo)

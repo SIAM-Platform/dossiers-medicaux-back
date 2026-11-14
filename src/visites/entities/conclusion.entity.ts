@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+import { encrypted } from '../../privacy/field-cipher';
+
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -29,7 +29,7 @@ export class Conclusion {
     @Column({ type: 'enum', enum: ['demande_examens_complementaires', 'apte', 'inapte'] })
     decision!: string;
 
-    @Column({ type: 'text', nullable: true })
+    @Column({ type: 'text', nullable: true, transformer: encrypted })
     commentaires!: string;
 
     @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })

@@ -1,3 +1,4 @@
+import { encryptedBoolean, encryptedDate } from '../../privacy/field-cipher';
 /* eslint-disable prettier/prettier */
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { VisiteMedicale } from './visite-medicale.entity';
@@ -14,27 +15,27 @@ export class Vaccination {
     @JoinColumn({ name: 'visite_id' })
     visite!: VisiteMedicale;
 
-    @Column({ name: 'fievre_jaune', default: false })
-    fievre_jaune!: boolean;
+    @Column({ name: 'fievre_jaune', type: 'text', nullable: true, transformer: encryptedBoolean })
+    fievre_jaune: boolean = false;
 
-    @Column({ name: 'hepatite_virale', default: false })
-    hepatite_virale!: boolean;
+    @Column({ name: 'hepatite_virale', type: 'text', nullable: true, transformer: encryptedBoolean })
+    hepatite_virale: boolean = false;
 
-    @Column({ default: false })
-    tetanos!: boolean;
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
+    tetanos: boolean = false;
 
-    @Column({ default: false })
-    meningite!: boolean;
+    @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })
+    meningite: boolean = false;
 
-    @Column({ name: 'date_fievre_jaune', type: 'datetime', nullable: true })
+    @Column({ name: 'date_fievre_jaune', type: 'text', nullable: true, transformer: encryptedDate })
     date_fievre_jaune!: Date;
 
-    @Column({ name: 'date_hepatite_virale', type: 'datetime', nullable: true })
+    @Column({ name: 'date_hepatite_virale', type: 'text', nullable: true, transformer: encryptedDate })
     date_hepatite_virale!: Date;
 
-    @Column({ name: 'date_meningite', type: 'datetime', nullable: true })
+    @Column({ name: 'date_meningite', type: 'text', nullable: true, transformer: encryptedDate })
     date_meningite!: Date;
 
-    @Column({ name: 'date_tetanos', type: 'datetime', nullable: true })
+    @Column({ name: 'date_tetanos', type: 'text', nullable: true, transformer: encryptedDate })
     date_tetanos!: Date;
 }

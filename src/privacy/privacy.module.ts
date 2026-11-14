@@ -27,6 +27,7 @@ import {
   PrivacyActor,
   PrivacyService,
 } from './privacy.service';
+import { CryptoKeysService } from './crypto-keys';
 
 /**
  * Accès au module RGPD par rôle, branché sur l'authentification existante du service :
@@ -225,6 +226,8 @@ export function privacyModule(opts: {
     module: PrivacyModule,
     controllers: [PrivacyController],
     providers: [
+      // Trousseau du chiffrement des champs (chargé au démarrage, rechargé périodiquement).
+      CryptoKeysService,
       { provide: PRIVACY_INVENTORY, useValue: opts.inventory },
       PrivacyService,
       PrivacyAccessGuard,

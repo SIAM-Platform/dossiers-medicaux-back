@@ -7,6 +7,7 @@ import { Certificat } from '../../visites/entities/certificat.entity';
 import { Conclusion } from '../../visites/entities/conclusion.entity';
 import { VisiteMedicale } from '../../visites/entities/visite-medicale.entity';
 import { FitnessStatusDto, projectFitness, VisitFacts } from './fitness.projection';
+import { marinIndex } from '../../marins/marin-index';
 import { SiamCaller } from './siam-integration.guard';
 
 export interface FitnessQuery {
@@ -32,8 +33,8 @@ export class SiamIntegrationService {
     if (!nim && !cni && patientId === null) throw new BadRequestException('Identifiant requis : nim, cni ou patientId');
     const marins = this.ds.getRepository(Marin);
     const found =
-      (nim ? await marins.findOne({ where: { numero_ins_mar: nim }, select: { id: true } }) : null) ??
-      (cni ? await marins.findOne({ where: { numero_cni: cni }, select: { id: true } }) : null) ??
+      (nim ? await marins.findOne({ where: { numero_ins_mar_index: marinIndex.nim(nim) ?? '' }, select: { id: true } }) : null) ??
+      (cni ? await marins.findOne({ where: { numero_cni_index: marinIndex.cni(cni) ?? '' }, select: { id: true } }) : null) ??
       (patientId !== null ? await marins.findOne({ where: { id: patientId }, select: { id: true } }) : null);
     // Journal d'acces : application appelante et patient interne, jamais l'identifiant presente.
     if (!found) {

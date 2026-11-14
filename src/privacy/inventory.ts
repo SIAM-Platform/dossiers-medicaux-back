@@ -1,6 +1,8 @@
 import { DataSource } from 'typeorm';
+import { marinIndex } from '../marins/marin-index';
 import {
   agentExporter,
+  exportRow,
   COMMON_PROCESSORS,
   CONTROLLER,
   requestsDataset,
@@ -61,6 +63,7 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
       subjects: 'Gens de mer',
       categories: ['SANTE'],
       storage: MEDICAL_DETAIL_TABLES.join(', '),
+      encrypted: true,
       recipients: [
         'Médecins et infirmiers habilités du centre (jamais transmis aux autres applications)',
       ],
@@ -85,7 +88,8 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
         "Obligation légale (art. 6.1.c) ; exception au droit à l'effacement (art. 17.3.b)",
       subjects: 'Gens de mer ; médecins signataires',
       categories: ['IDENTITE', 'SANTE', 'PROFESSIONNEL'],
-      storage: 'visitemedicale, conclusion, certificat',
+      storage:
+        'visitemedicale, conclusion (commentaires chiffrés ; décision d’aptitude en clair), certificat',
       recipients: [
         'Médecins habilités',
         'Vérification publique du certificat (validité seulement, aucune donnée médicale)',
@@ -158,8 +162,8 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
         const [marin] = await run<Record<string, unknown>>(
           ds,
           ds,
-          `SELECT * FROM marin WHERE numero_ins_mar = $1 OR numero_cni = $1 LIMIT 1`,
-          [ref],
+          `SELECT * FROM marin WHERE numero_ins_mar_index = $1 OR numero_cni_index = $2 LIMIT 1`,
+          [marinIndex.nim(ref), marinIndex.cni(ref)],
         );
         if (!marin) return { found: false };
         const visites = await run<Record<string, unknown>>(
@@ -183,10 +187,15 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
               `SELECT * FROM ${t} WHERE visite_id IN (${marks})`,
               ids,
             );
-            if (rows.length) detail[t] = rows;
+            if (rows.length) detail[t] = rows.map(exportRow);
           }
         }
-        return { found: true, marin, visites, ...detail };
+        return {
+          found: true,
+          marin: exportRow(marin),
+          visites: visites.map(exportRow),
+          ...detail,
+        };
       },
     },
   ],

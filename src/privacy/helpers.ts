@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import { PrivacyDataset, Processor, SubjectExporter } from './privacy.types';
 import { ident, isMysql, run, tablesWithColumn, text } from './sql';
+import { decryptField, isEncrypted } from './field-cipher';
 
 /** Briques communes aux inventaires RGPD des services hors socle (PostgreSQL ou MySQL). */
 
@@ -12,8 +13,20 @@ const norm = (s: unknown) =>
     .trim()
     .toUpperCase();
 const HIDDEN = /(hash|secret|token|password|mot_de_passe|motdepasse)/i;
-const strip = (row: Record<string, unknown>) =>
-  Object.fromEntries(Object.entries(row).filter(([k]) => !HIDDEN.test(k)));
+/** Ligne exportable : secrets retirés, champs chiffrés déchiffrés (export au titre du droit d'accès). */
+export const exportRow = (row: Record<string, unknown>) =>
+  Object.fromEntries(
+    Object.entries(row)
+      .filter(([k]) => !HIDDEN.test(k) && !/_index$/.test(k))
+      .map(([k, v]) => [k, isEncrypted(v) ? safeDecrypt(v as string) : v]),
+  );
+const safeDecrypt = (v: string): string => {
+  try {
+    return decryptField(v);
+  } catch {
+    return '[illisible : clé de chiffrement différente]';
+  }
+};
 
 /** Toutes les lignes des tables qui portent `column = value` (sauf `exclude`). */
 export async function rowsByColumn(
@@ -32,7 +45,7 @@ export async function rowsByColumn(
       `SELECT * FROM ${ident(ds, t)} WHERE ${cast} = $1 LIMIT 1000`,
       [value],
     );
-    if (rows.length) out[t] = rows.map(strip);
+    if (rows.length) out[t] = rows.map(exportRow);
   }
   return out;
 }
@@ -51,7 +64,7 @@ export async function searchColumns(
       ds,
       `SELECT * FROM ${ident(ds, s.table)} LIMIT 20000`,
     );
-    const hits = rows.filter((r) =>
+    const hits = rows.map(exportRow).filter((r) =>
       s.columns.some((c) => {
         const v = r[c];
         return norm(
@@ -59,7 +72,7 @@ export async function searchColumns(
         ).includes(wanted);
       }),
     );
-    if (hits.length) out[s.label ?? s.table] = hits.map(strip);
+    if (hits.length) out[s.label ?? s.table] = hits;
   }
   return out;
 }
@@ -96,7 +109,7 @@ export function agentExporter(opts: {
       );
       return {
         found: rows.length > 0,
-        comptes: rows.map(strip),
+        comptes: rows.map(exportRow),
         actionsRgpd: actions,
       };
     },
@@ -147,3 +160,38 @@ export const requestsDataset: PrivacyDataset = {
     },
   },
 };
+
+/**
+ * Comptes des agents : identité effacée 3 ans après la désactivation (le nom reste dans les actes
+ * et journaux produits, à titre de preuve). `set` : colonnes → expression SQL (déjà protégées).
+ */
+export function accountsDataset(opts: {
+  service: string;
+  table: string;
+  storage: string;
+  condition: string;
+  set: Record<string, string>;
+}): PrivacyDataset {
+  return {
+    code: 'COMPTES_AGENTS',
+    label: 'Comptes des agents',
+    purpose: `Gestion des accès à ${opts.service} et traçabilité des actions des agents`,
+    legalBasis:
+      "Mission d'intérêt public (art. 6.1.e) ; sécurité du système d'information",
+    subjects: "Agents de l'administration et des organismes habilités",
+    categories: ['IDENTITE', 'CONTACT', 'PROFESSIONNEL'],
+    storage: opts.storage,
+    recipients: [
+      "Administrateurs de l'application",
+      'Keycloak (authentification)',
+    ],
+    retention: {
+      key: 'comptes-agents-desactives',
+      defaultDays: 1095,
+      action: 'ANONYMIZE',
+      justification:
+        "3 ans après la désactivation du compte : identité effacée ; le nom de l'agent reste dans les actes et journaux qu'il a produits (preuve)",
+      purge: { table: opts.table, condition: opts.condition, set: opts.set },
+    },
+  };
+}
