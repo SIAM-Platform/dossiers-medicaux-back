@@ -32,6 +32,6 @@ export class Conclusion {
     @Column({ type: 'text', nullable: true, transformer: encrypted })
     commentaires!: string;
 
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date_conclusion!: Date;
 }

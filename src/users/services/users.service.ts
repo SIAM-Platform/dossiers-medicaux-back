@@ -37,6 +37,8 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { email },
       relations: { roles: true },
+      // Ordre des rôles stable quelle que soit la base (PostgreSQL ne garantit aucun ordre).
+      order: { roles: { id: 'ASC' } },
     });
     if (!user) {
       throw new NotFoundException(`Aucun utilisateur trouvé avec l'email ${email}`);
@@ -91,7 +93,7 @@ export class UsersService {
   async findAll(): Promise<User[]> {
     return this.userRepository.find({
       relations: { roles: true },
-      order: { username: 'ASC' },
+      order: { username: 'ASC', roles: { id: 'ASC' } },
     });
   }
 
@@ -102,6 +104,8 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { id },
       relations: { roles: true },
+      // Ordre des rôles stable quelle que soit la base (PostgreSQL ne garantit aucun ordre).
+      order: { roles: { id: 'ASC' } },
     });
     if (!user) {
       throw new NotFoundException(`Utilisateur #${id} non trouvé`);
@@ -116,6 +120,8 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { username },
       relations: { roles: true },
+      // Ordre des rôles stable quelle que soit la base (PostgreSQL ne garantit aucun ordre).
+      order: { roles: { id: 'ASC' } },
     });
     if (!user) {
       throw new NotFoundException(`Utilisateur ${username} non trouvé`);
@@ -130,6 +136,8 @@ export class UsersService {
     const user = await this.userRepository.findOne({
       where: { email },
       relations: { roles: true },
+      // Ordre des rôles stable quelle que soit la base (PostgreSQL ne garantit aucun ordre).
+      order: { roles: { id: 'ASC' } },
     });
     if (!user) {
       throw new NotFoundException(`Utilisateur avec l'email ${email} non trouvé`);
@@ -268,6 +276,8 @@ export class UsersService {
     const foundUser = await this.userRepository.findOne({
       where: { id: user.id },
       relations: { roles: true },
+      // Ordre des rôles stable quelle que soit la base (PostgreSQL ne garantit aucun ordre).
+      order: { roles: { id: 'ASC' } },
     });
     return foundUser!;
   }

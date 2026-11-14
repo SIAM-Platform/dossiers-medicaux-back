@@ -9,8 +9,8 @@ import { VisiteMedicale } from '../src/visites/entities/visite-medicale.entity';
 import { SiamIntegrationService } from '../src/integrations/siam/siam-integration.service';
 
 /**
- * Dossier médical chiffré en base, sur MariaDB/MySQL réel (application complète, synchronisation
- * du schéma comprise) :
+ * Dossier médical chiffré en base, sur PostgreSQL réel (application complète, schéma créé par
+ * les migrations) :
  *   PRIVACY_TEST_DB_NAME=siam_dmgm_e2e npx jest --config test/jest-e2e.json medical-encryption
  * La base indiquée est recréée par le test (son nom doit contenir « e2e » ou « test »).
  */
@@ -25,18 +25,18 @@ const DB = process.env.PRIVACY_TEST_DB_NAME;
 
     beforeAll(async () => {
       process.env.DB_NAME = DB;
-      process.env.DB_SYNC = 'true';
       process.env.CRYPTO_KEYRING_REFRESH_SECONDS = '0';
       const admin = new DataSource({
-        type: 'mysql',
+        type: 'postgres',
         host: process.env.DB_HOST,
-        port: Number(process.env.DB_PORT ?? 3306),
+        port: Number(process.env.DB_PORT ?? 5432),
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
+        database: 'postgres',
       });
       await admin.initialize();
-      await admin.query(`DROP DATABASE IF EXISTS \`${DB}\``);
-      await admin.query(`CREATE DATABASE \`${DB}\``);
+      await admin.query(`DROP DATABASE IF EXISTS "${DB}"`);
+      await admin.query(`CREATE DATABASE "${DB}"`);
       await admin.destroy();
       app = await NestFactory.createApplicationContext(AppModule, {
         logger: ['error'],
@@ -84,7 +84,7 @@ const DB = process.env.PRIVACY_TEST_DB_NAME;
         test_grossesse: false,
       } as never);
 
-      const [raw] = await ds.query(`SELECT * FROM marin WHERE id = ?`, [id]);
+      const [raw] = await ds.query(`SELECT * FROM marin WHERE id = $1`, [id]);
       const rawText = JSON.stringify(raw);
       for (const secret of [
         'Diop',
@@ -110,7 +110,7 @@ const DB = process.env.PRIVACY_TEST_DB_NAME;
       ])
         expect(String(raw[col])).toMatch(/^enc:v2:/);
       const [c] = await ds.query(
-        `SELECT * FROM constante WHERE visite_id = ?`,
+        `SELECT * FROM constante WHERE visite_id = $1`,
         [(visite as unknown as { id: number }).id],
       );
       for (const col of [

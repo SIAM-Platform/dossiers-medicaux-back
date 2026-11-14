@@ -1,7 +1,7 @@
 # Protection des données personnelles (RGPD)
 
 Module `src/privacy/` : version autonome du module RGPD des services du socle SIAM, adaptée à ce
-service (base MySQL `siam_dmgm`, authentification existante).
+service (base PostgreSQL `siam_dmgm`, authentification existante).
 
 ## Ce que fait le module
 
@@ -41,7 +41,7 @@ changent sans redéploiement par `PUT /privacy/retention/:key`.
 ## Test
 
 ```bash
-PRIVACY_TEST_DB_TYPE=mysql PRIVACY_TEST_DB_URL=… npx jest --config test/jest-e2e.json privacy
+PRIVACY_TEST_DB_TYPE=postgres PRIVACY_TEST_DB_URL=… npx jest --config test/jest-e2e.json privacy
 ```
 
 Le test exécute chaque condition de purge et chaque exporteur sur le schéma réel, sans rien supprimer.
@@ -53,9 +53,9 @@ dans `audit_events` : agent, date, action (`CONSULTATION`, `MODIFICATION CONSTAN
 route, code de retour, **noms** des champs envoyés (jamais leurs valeurs). Les identifiants de
 recherche (CNI, e-mail, numéro d'inscription) et l'adresse IP sont pseudonymisés.
 
-- ajout seul (déclencheurs MySQL) et chaîné : chaque entrée porte l'empreinte SHA-256 de la
+- ajout seul (déclencheurs PostgreSQL : ni modification, ni suppression, ni vidage) et chaîné : chaque entrée porte l'empreinte SHA-256 de la
   précédente ; la tête de chaîne est verrouillée, plusieurs copies du service écrivent sans se croiser ;
 - `GET /api/audit?entityType=visites&entityId=…` : historique d'un objet ;
   `GET /api/audit/verify` : recalcul de toute la chaîne ;
 - lecture réservée à `admin` et `PRIVACY_OFFICER` (surchargeable : `AUDIT_ROLES_READ`).
-- Test : `PRIVACY_TEST_DB_URL=mysql://… npx jest --config test/jest-e2e.json audit`.
+- Test : `PRIVACY_TEST_DB_URL=postgres://…/siam_dmgm_e2e npx jest --config test/jest-e2e.json audit`.

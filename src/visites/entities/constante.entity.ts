@@ -38,7 +38,7 @@ export class Constante {
     @Column({ name: 'frequence_respiratoire', type: 'text', nullable: true, transformer: encryptedNumber })
     frequence_respiratoire!: number;
 
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date_prise!: Date;
 
     @Column({ type: 'text', nullable: true, transformer: encrypted })

@@ -20,10 +20,10 @@ export class Certificat {
     @Column({ name: 'url_pdf', length: 191 })
     url_pdf!: string;
 
-    @Column({ type: 'datetime' })
+    @Column({ type: 'timestamp' })
     date_emission!: Date;
 
-    @Column({ type: 'datetime' })
+    @Column({ type: 'timestamp' })
     date_expiration!: Date;
 
     @Column({ name: 'numero_matricule', nullable: true, length: 191 })

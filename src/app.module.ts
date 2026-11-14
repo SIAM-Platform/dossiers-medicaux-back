@@ -1,9 +1,8 @@
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
-import { prepareEncryptedColumns } from './privacy/schema-prep';
+import { databaseOptions } from './config/database.config';
 import configuration from './config/configuration';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/modules/users.module';
@@ -27,28 +26,11 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
       isGlobal: true,
     }),
     TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        type: 'mysql',
-        host: config.get('database.host'),
-        port: config.get('database.port'),
-        username: config.get('database.username'),
-        password: config.get('database.password'),
-        database: config.get('database.database'),
+      // PostgreSQL, migrations versionnées (src/migrations), jamais de synchronisation automatique.
+      useFactory: () => ({
+        ...databaseOptions(process.env),
         autoLoadEntities: true,
-        // La synchronisation est lancée par dataSourceFactory, après la préparation des colonnes chiffrées.
-        synchronize: false,
-        logging: config.get('nodeEnv') === 'development',
       }),
-      dataSourceFactory: async (options) => {
-        const ds = await new DataSource(options!).initialize();
-        // Colonnes chiffrées converties en TEXT en conservant les données, AVANT la synchronisation
-        // (qui supprimerait et recréerait une colonne dont le type change).
-        await prepareEncryptedColumns(ds);
-        if (process.env.DB_SYNC === 'true') await ds.synchronize();
-        return ds;
-      },
     }),
     AuthModule,
     UsersModule,
@@ -65,7 +47,11 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
     privacyModule({
       inventory: PRIVACY_INVENTORY_DATA,
       authGuards: [KeycloakAuthGuard],
-      access: { read: ['PRIVACY_OFFICER', 'admin'], manage: ['PRIVACY_OFFICER', 'admin'], export: ['PRIVACY_OFFICER', 'admin'] },
+      access: {
+        read: ['PRIVACY_OFFICER', 'admin'],
+        manage: ['PRIVACY_OFFICER', 'admin'],
+        export: ['PRIVACY_OFFICER', 'admin'],
+      },
     }),
   ],
   providers: [MarinProtectionService],

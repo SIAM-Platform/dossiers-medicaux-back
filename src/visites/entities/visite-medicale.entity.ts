@@ -26,13 +26,13 @@ export class VisiteMedicale {
   @JoinColumn({ name: 'marin_id' })
   marin!: Marin;
 
-  @Column({ type: 'datetime' })
+  @Column({ type: 'timestamp' })
   date_visite!: Date;
 
   @Column({ type: 'enum', enum: ['en_cours', 'attente_examens', 'terminé'] })
   status!: string;
 
-  @Column({ type: 'datetime', nullable: true })
+  @Column({ type: 'timestamp', nullable: true })
   date_expiration!: Date;
 
   @Column({ nullable: true, length: 191 })
@@ -41,7 +41,7 @@ export class VisiteMedicale {
   @Column({ default: false })
   reconvocation!: boolean;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at!: Date;
 
   @Column({ name: 'type_visiteid_type', nullable: true })

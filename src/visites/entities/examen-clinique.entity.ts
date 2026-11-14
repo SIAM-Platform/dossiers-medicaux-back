@@ -98,7 +98,7 @@ export class ExamenClinique {
     @Column({ type: 'text', nullable: true, transformer: encrypted })
     psychisme!: string;
 
-    @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+    @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
     date_examen!: Date;
 
     // ... (tous les autres champs de votre dump)

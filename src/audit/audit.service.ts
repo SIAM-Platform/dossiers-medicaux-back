@@ -1,4 +1,4 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { createHash, randomUUID } from 'crypto';
 import { DataSource } from 'typeorm';
@@ -23,41 +23,17 @@ const GENESIS = '0'.repeat(64);
 
 /**
  * Journal d'audit du dossier médical : toute consultation et toute modification sont tracées.
- * - ajout seul : un déclencheur refuse modification et suppression ;
+ * - ajout seul : un déclencheur refuse modification, suppression et vidage (migration AuditJournal) ;
  * - chaîné : chaque entrée porte l'empreinte SHA-256 de la précédente, une rupture est détectable
  *   (`GET /audit/verify`) ;
  * - minimal : seuls les noms des champs modifiés sont gardés, jamais leurs valeurs ; les
  *   identifiants de recherche (CNI, e-mail…) et l'adresse IP sont pseudonymisés.
  */
 @Injectable()
-export class AuditService implements OnModuleInit {
+export class AuditService {
   private readonly logger = new Logger('Audit');
 
   constructor(@InjectDataSource() private readonly ds: DataSource) {}
-
-  async onModuleInit(): Promise<void> {
-    const runner = this.ds.createQueryRunner();
-    await runner.connect();
-    try {
-      await runner.query(`SELECT GET_LOCK('siam-audit-schema', 60)`);
-      for (const sql of [
-        `CREATE TABLE IF NOT EXISTS audit_events (seq bigint PRIMARY KEY, id varchar(36) NOT NULL UNIQUE, occurred_at datetime(3) NOT NULL, actor_id varchar(100) NULL, actor_name varchar(200) NOT NULL, action varchar(80) NOT NULL, entity_type varchar(60) NOT NULL, entity_id varchar(100) NULL, route varchar(200) NOT NULL, status smallint NOT NULL, fields json NULL, context json NULL, ip varchar(40) NULL, prev_hash char(64) NOT NULL, hash char(64) NOT NULL, INDEX idx_audit_entity (entity_type, entity_id), INDEX idx_audit_actor (actor_id, occurred_at))`,
-        `CREATE TABLE IF NOT EXISTS audit_chain_head (id tinyint PRIMARY KEY, seq bigint NOT NULL, hash char(64) NOT NULL)`,
-        `INSERT IGNORE INTO audit_chain_head (id, seq, hash) VALUES (1, 0, '${GENESIS}')`,
-        `DROP TRIGGER IF EXISTS trg_audit_events_no_update`,
-        `CREATE TRIGGER trg_audit_events_no_update BEFORE UPDATE ON audit_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'SIAM_IMMUTABLE: audit_events est en ajout seul'`,
-        `DROP TRIGGER IF EXISTS trg_audit_events_no_delete`,
-        `CREATE TRIGGER trg_audit_events_no_delete BEFORE DELETE ON audit_events FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'SIAM_IMMUTABLE: audit_events est en ajout seul'`,
-      ]) {
-        await runner.query(sql);
-      }
-    } finally {
-      await runner
-        .query(`SELECT RELEASE_LOCK('siam-audit-schema')`)
-        .catch(() => undefined);
-      await runner.release();
-    }
-  }
 
   /** Contenu haché d'une entrée (ordre des champs fixe). */
   private static digest(
@@ -145,7 +121,7 @@ export class AuditService implements OnModuleInit {
         ],
       );
       await m.query(
-        `UPDATE audit_chain_head SET seq = ?, hash = ? WHERE id = 1`,
+        `UPDATE audit_chain_head SET seq = $1, hash = $2 WHERE id = 1`,
         [seq, hash],
       );
     });

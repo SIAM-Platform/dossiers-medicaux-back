@@ -36,7 +36,7 @@ export class Marin {
   @Column({ type: 'text', nullable: true, transformer: encrypted })
   email!: string;
 
-  @Column({ type: 'datetime', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   date_creation!: Date;
 
   @Column({ type: 'text', nullable: true, transformer: encryptedBoolean })

@@ -21,6 +21,6 @@ export class ExamenComplementaire {
     @Column({ type: 'text', nullable: true, transformer: encrypted })
     resultat!: string;
 
-    @Column({ name: 'date_examen', type: 'datetime', nullable: true })
+    @Column({ name: 'date_examen', type: 'timestamp', nullable: true })
     date_examen!: Date;
 }

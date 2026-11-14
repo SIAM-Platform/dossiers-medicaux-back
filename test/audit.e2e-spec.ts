@@ -18,12 +18,15 @@ import { DataSource } from 'typeorm';
 import { AuditModule } from '../src/audit/audit.module';
 import { AuditService } from '../src/audit/audit.service';
 import { KeycloakAuthGuard } from '../src/auth/guards/keycloak-auth.guard';
+import { AuditJournal1794688034400 } from '../src/migrations/1794688034400-AuditJournal';
 
 /**
- * Journal d'audit du dossier médical contre la vraie base MySQL :
- *   PRIVACY_TEST_DB_URL=mysql://… npx jest --config test/jest-e2e.json audit
+ * Journal d'audit du dossier médical contre une vraie base PostgreSQL de test (recréée ; son nom
+ * doit contenir « e2e » ou « test ») :
+ *   PRIVACY_TEST_DB_URL=postgres://…/siam_dmgm_e2e npx jest --config test/jest-e2e.json audit
  */
-const URL = process.env.PRIVACY_TEST_DB_URL;
+const RAW_URL = process.env.PRIVACY_TEST_DB_URL;
+const URL = RAW_URL && /e2e|test/.test(RAW_URL) ? RAW_URL : undefined;
 
 /** Authentification simulée : rôle passé dans l'en-tête `x-test-role`. */
 @Injectable()
@@ -76,10 +79,14 @@ class FakeMarins {
     const moduleRef = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
-          type: 'mysql',
+          type: 'postgres',
           url: URL,
           entities: [],
           synchronize: false,
+          // Base de test dédiée, recréée : schéma du journal par sa migration.
+          dropSchema: true,
+          migrations: [AuditJournal1794688034400],
+          migrationsRun: true,
         }),
         AuditModule,
       ],
