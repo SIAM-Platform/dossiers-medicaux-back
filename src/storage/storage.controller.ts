@@ -32,7 +32,10 @@ export class StorageController {
     res.setHeader('Content-Disposition', `${disposition}; filename="${ascii}"; filename*=UTF-8''${encodeURIComponent(file.originalName)}`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
+    // Le lecteur PDF intégré des navigateurs ne s'ouvre pas dans un document « sandbox » : la
+    // restriction est posée sur les autres types (le contenu actif d'un PDF reste confiné au lecteur).
+    if (file.mimeType !== 'application/pdf')
+      res.setHeader('Content-Security-Policy', "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox");
     res.setHeader('Referrer-Policy', 'no-referrer');
     res.setHeader('Cross-Origin-Resource-Policy', 'same-site');
     res.end(data);

@@ -157,6 +157,12 @@ describe('Bibliothèque de stockage SIAM', () => {
     await expect(s.store({ buffer: Buffer.from([0, 1, 2]), originalname: 'x.vdr' }, { mimeTypes: [], maxBytes: 1024 }, null)).rejects.toThrow(/Type de fichier/);
   });
 
+  it('nom de fichier UTF-8 transmis en latin1 par multer : rétabli', () => {
+    const { sanitizeName } = require('./storage.service');
+    expect(sanitizeName(Buffer.from('brèche côté quai.png', 'utf8').toString('latin1'))).toBe('brèche côté quai.png');
+    expect(sanitizeName('déjà correct.pdf')).toBe('déjà correct.pdf');
+  });
+
   it('le format chiffré refuse une clé erronée', () => {
     const { blob } = sealFile(PNG);
     expect(() => openFile(blob, sealFile(PNG).fileKey)).toThrow();

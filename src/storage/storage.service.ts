@@ -37,8 +37,18 @@ export interface DownloadLink {
 
 export const sha256 = (data: Buffer): string => createHash('sha256').update(data).digest('hex');
 
+/**
+ * Nom transmis par multer : les en-têtes multipart sont lus en latin1, un nom UTF-8 arrive donc
+ * déformé (« brÃ¨che »). Il est relu en UTF-8 quand c'est le cas.
+ */
+export const decodeUploadName = (name: string): string => {
+  if (!name || !/[\u0080-\u00ff]/.test(name)) return name;
+  const utf8 = Buffer.from(name, 'latin1').toString('utf8');
+  return utf8.includes('\ufffd') ? name : utf8;
+};
+
 export const sanitizeName = (name: string): string =>
-  (name || 'fichier')
+  (decodeUploadName(name) || 'fichier')
     .normalize('NFKC')
     .replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_')
     .slice(0, 255);

@@ -8,6 +8,8 @@ export class StoredFiles1794766942232 implements MigrationInterface {
   name = 'StoredFiles1794766942232';
 
   public async up(q: QueryRunner): Promise<void> {
+    // Base alignée une dernière fois par la synchronisation (passage aux migrations) : table déjà là.
+    if (await q.hasTable('stored_files')) return;
     await q.query(
       `CREATE TABLE "stored_files" ("id" uuid NOT NULL DEFAULT uuid_generate_v4(), "driver" character varying(16) NOT NULL, "storage_key" character varying(512) NOT NULL, "original_name" character varying(255) NOT NULL, "mime_type" character varying(128) NOT NULL, "size_bytes" bigint NOT NULL, "sha256" character(64) NOT NULL, "av_status" character varying(16) NOT NULL, "encryption" character varying(16) NOT NULL DEFAULT 'NONE', "file_key" text, "owner_type" character varying(64), "owner_id" character varying(64), "read_permission" character varying(64), "uploaded_by" character varying(64), "uploaded_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(), "deleted_at" TIMESTAMP WITH TIME ZONE, CONSTRAINT "UQ_d876a11b7afb1d51658687cd302" UNIQUE ("storage_key"), CONSTRAINT "PK_5d5be862bf53851c1794b4adf4e" PRIMARY KEY ("id"))`,
     );
