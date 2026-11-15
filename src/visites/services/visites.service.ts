@@ -13,7 +13,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
+import { StorageService } from '../../storage/storage.service';
+import { DMGM_SCAN_POLICY, FILE_REF_PREFIX } from '../../storage/dmgm-files';
 import { VisiteMedicale } from '../entities/visite-medicale.entity';
 import { Marin } from '../../marins/entities/marin.entity';
 import { Constante } from '../entities/constante.entity';
@@ -22,8 +24,6 @@ import { Vaccination } from '../entities/vaccination.entity';
 import { TestDrogue } from '../entities/test-drogue.entity';
 import { ReponseAutoDeclaration } from '../entities/reponse-auto-declaration.entity';
 import { CreateVisiteDto } from '../dto/create-visite.dto';
-import * as fs from 'fs';
-import * as path from 'path';
 import { Conclusion } from '../entities/conclusion.entity';
 import { marinIndex } from '../../marins/marin-index';
 import { UpdateConclusionDto } from '../entities/update-conclusion.dto';
@@ -46,6 +46,7 @@ export class VisitesService {
     @InjectRepository(ReponseAutoDeclaration)
     private reponseRepo: Repository<ReponseAutoDeclaration>,
     private dataSource: DataSource,
+    private readonly storage: StorageService,
   ) {}
 
   /**
@@ -71,11 +72,6 @@ export class VisitesService {
         auto_declaration,
       } = createDto;
 
-      let fileUrl = '';
-      if (autre_examen?.image) {
-        fileUrl = await this.saveFile(autre_examen.image);
-      }
-
       const marin = await this.createMarin(infos, queryRunner);
 
       const visite = await this.createVisiteMedicale(
@@ -84,6 +80,11 @@ export class VisitesService {
         infos,
         queryRunner,
       );
+
+      let fileUrl = '';
+      if (autre_examen?.image) {
+        fileUrl = await this.saveFile(autre_examen.image, visite.id, queryRunner.manager);
+      }
 
       await this.createOrUpdateConstante(visite.id, constantes, queryRunner);
 
@@ -441,51 +442,24 @@ export class VisitesService {
   }
 
   /**
-   * Sauvegarde un fichier (base64) et retourne l'URL.
+   * Dépose un scan (data URL base64) dans la bibliothèque de stockage : type réel, taille,
+   * antivirus, empreinte, chiffrement. Renvoie la référence `siam-file:<id>` ; le fichier ne
+   * s'ouvre que par un lien court, délivré aux comptes ayant la permission visite.read.
    */
-  private async saveFile(base64Data: string): Promise<string> {
-    if (!base64Data.startsWith('data:')) {
-      throw new BadRequestException('Le fichier doit être encodé en base64');
+  private async saveFile(base64Data: string, visiteId: number, manager?: EntityManager): Promise<string> {
+    const matches = /^data:([^;,]+);base64,(.+)$/s.exec(String(base64Data ?? ''));
+    if (!matches) {
+      throw new BadRequestException('Le fichier doit être encodé en base64 (data URL)');
     }
-
-    const matches = base64Data.match(/^data:(.+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      throw new BadRequestException('Format base64 invalide');
-    }
-
-    const mimeType = matches[1];
     const buffer = Buffer.from(matches[2], 'base64');
-
-    let extension = 'bin';
-    switch (mimeType) {
-      case 'application/pdf':
-        extension = 'pdf';
-        break;
-      case 'application/msword':
-        extension = 'doc';
-        break;
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        extension = 'docx';
-        break;
-      default:
-        if (mimeType.startsWith('image/')) {
-          extension = mimeType.split('/')[1];
-        } else {
-          throw new BadRequestException(`Type MIME non supporté: ${mimeType}`);
-        }
-    }
-
-    const uploadDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const filename = `file_${Date.now()}.${extension}`;
-    const filepath = path.join(uploadDir, filename);
-    fs.writeFileSync(filepath, buffer);
-
-    const appUrl = process.env.APP_URL || 'http://localhost:3008';
-    return `${appUrl}/uploads/${filename}`;
+    const saved = await this.storage.store(
+      { buffer, originalname: 'scan-autre-examen' },
+      DMGM_SCAN_POLICY,
+      null,
+      manager,
+      { type: 'VisiteMedicale', id: visiteId, readPermission: 'visite.read' },
+    );
+    return `${FILE_REF_PREFIX}${saved.id}`;
   }
 
   // -------------------- Méthodes de récupération --------------------
@@ -843,7 +817,7 @@ export class VisitesService {
     // Gérer le fichier image si présent
     let fileUrl = examen.url_scan_autre_examen;
     if (data.image) {
-      fileUrl = await this.saveFile(data.image);
+      fileUrl = await this.saveFile(data.image, visiteId);
     }
 
     Object.assign(examen, {

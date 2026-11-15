@@ -20,6 +20,7 @@ import { KeycloakAuthGuard } from './auth/guards/keycloak-auth.guard';
 import { AccessModule } from './access/access.module';
 import { PermissionGuard } from './access/permission.guard';
 import { privacyModule } from './privacy/privacy.module';
+import { StorageModule } from './storage/storage.module';
 import { AuditModule } from './audit/audit.module';
 import { MarinProtectionService } from './marins/marin-protection.service';
 import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
@@ -49,6 +50,8 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
     SiamIntegrationModule,
     // Journal d'audit du dossier médical (consultations et modifications, chaîné, en ajout seul).
     AuditModule,
+    // Fichiers : bibliothèque de stockage SIAM (contrôles, antivirus, chiffrement, liens courts).
+    StorageModule,
     // RGPD : registre des traitements, durées de conservation, demandes des personnes, export.
     privacyModule({
       inventory: PRIVACY_INVENTORY_DATA,

@@ -41,10 +41,8 @@ async function bootstrap() {
   // Préfixe global
   app.setGlobalPrefix('api');
 
-  // Fichiers statiques (uploads)
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
-    prefix: '/uploads/',
-  });
+  // Les fichiers ne sont plus publiés en accès libre (/uploads) : ils passent par la bibliothèque de
+  // stockage (contrôle des droits, lien court, accès tracé). Reprise : npm run storage:files import-legacy.
 
   // Documentation Swagger
   const config = new DocumentBuilder()

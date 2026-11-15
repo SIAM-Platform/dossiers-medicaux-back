@@ -62,7 +62,7 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
         'Obligation légale (art. 6.1.c) et médecine du travail (art. 9.2.h) ; secret médical',
       subjects: 'Gens de mer',
       categories: ['SANTE'],
-      storage: MEDICAL_DETAIL_TABLES.join(', '),
+      storage: `${MEDICAL_DETAIL_TABLES.join(', ')}, stored_files (scans d'examens, chiffrés)`,
       encrypted: true,
       recipients: [
         'Médecins et infirmiers habilités du centre (jamais transmis aux autres applications)',
@@ -73,10 +73,18 @@ export const PRIVACY_INVENTORY_DATA: PrivacyInventory = {
         action: 'DELETE',
         justification:
           "20 ans après la visite (proposition, à valider par l'autorité sanitaire) ; la conclusion et le certificat restent",
-        purges: MEDICAL_DETAIL_TABLES.map((table) => ({
-          table,
-          condition: OLD_VISITS,
-        })),
+        purges: [
+          ...MEDICAL_DETAIL_TABLES.map((table) => ({
+            table,
+            condition: OLD_VISITS,
+          })),
+          // Scans d'examens : la ligne et la clé du fichier sont effacées, le contenu chiffré devient
+          // illisible ; l'objet est ensuite retiré du stockage (npm run storage:files sweep).
+          {
+            table: 'stored_files',
+            condition: `owner_type = 'VisiteMedicale' AND owner_id IN (SELECT id::text FROM visitemedicale WHERE date_visite < $1)`,
+          },
+        ],
       },
     },
     {
