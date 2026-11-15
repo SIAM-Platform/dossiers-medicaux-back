@@ -157,6 +157,18 @@ describe('Bibliothèque de stockage SIAM', () => {
     await expect(s.store({ buffer: Buffer.from([0, 1, 2]), originalname: 'x.vdr' }, { mimeTypes: [], maxBytes: 1024 }, null)).rejects.toThrow(/Type de fichier/);
   });
 
+  it('fichier produit par le service : sans antivirus, mais chiffré, tracé et relu à l’identique', async () => {
+    const s = make({ STORAGE_ANTIVIRUS: 'required' });
+    const pdf = Buffer.from('%PDF-1.4\n% certificat émis\n%%EOF\n');
+    const f = await s.storeGenerated(pdf, 'certificat/2026.pdf', 'application/pdf', null);
+    expect(f.avStatus).toBe('SKIPPED');
+    expect(f.encryption).toBe('AES256GCM');
+    expect(f.originalName).toBe('certificat_2026.pdf');
+    expect(readFileSync(walk(dir)[0]).subarray(0, 6).toString()).toBe('SIAMF1');
+    expect((await s.read(f.id)).data.equals(pdf)).toBe(true);
+    expect(journal.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'FICHIER_DEPOSE', fileId: f.id }));
+  });
+
   it('nom de fichier UTF-8 transmis en latin1 par multer : rétabli', () => {
     const { sanitizeName } = require('./storage.service');
     expect(sanitizeName(Buffer.from('brèche côté quai.png', 'utf8').toString('latin1'))).toBe('brèche côté quai.png');

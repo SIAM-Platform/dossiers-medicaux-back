@@ -108,8 +108,36 @@ export class StorageService implements OnModuleInit {
       this.reject(actor, file.originalname, 'Type de fichier non autorisé, ou contenu ne correspondant pas à son extension', HttpStatus.UNSUPPORTED_MEDIA_TYPE);
 
     const avStatus = await this.scan(actor, file);
-    const digest = sha256(file.buffer);
-    const { blob, fileKey } = sealFile(file.buffer);
+    return this.persist(actor, file.buffer, this.displayName(file.originalname, mimeType!), mimeType!, avStatus, manager, owner);
+  }
+
+  /**
+   * Fichier produit par le service lui-même (PDF émis, attestation) : ni contrôle de type ni
+   * antivirus, le contenu ne venant pas d'un tiers ; même empreinte, même chiffrement, même journal.
+   */
+  async storeGenerated(
+    data: Buffer,
+    name: string,
+    mimeType: string,
+    user: unknown,
+    manager?: EntityManager,
+    owner?: FileOwner,
+  ): Promise<StoredFile> {
+    if (!data?.length) throw new Error('Fichier généré vide');
+    return this.persist(toActor(user), data, sanitizeName(name), mimeType, 'SKIPPED', manager, owner);
+  }
+
+  private async persist(
+    actor: StorageActor | null,
+    buffer: Buffer,
+    name: string,
+    mimeType: string,
+    avStatus: AvStatus,
+    manager?: EntityManager,
+    owner?: FileOwner,
+  ): Promise<StoredFile> {
+    const digest = sha256(buffer);
+    const { blob, fileKey } = sealFile(buffer);
     const now = new Date();
     const key = `${this.settings.prefix}/${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, '0')}/${randomUUID()}`;
     await this.driver.put(key, blob);
@@ -120,9 +148,9 @@ export class StorageService implements OnModuleInit {
         repo.create({
           driver: this.driver.name,
           storageKey: key,
-          originalName: this.displayName(file.originalname, mimeType!),
-          mimeType: mimeType!,
-          sizeBytes: file.buffer.length,
+          originalName: name,
+          mimeType,
+          sizeBytes: buffer.length,
           sha256: digest,
           avStatus,
           encryption: 'AES256GCM',
@@ -134,7 +162,7 @@ export class StorageService implements OnModuleInit {
           deletedAt: null,
         }),
       );
-      this.journal.record({ actor, action: 'FICHIER_DEPOSE', fileId: saved.id, summary: `Fichier déposé (${mimeType}, ${file.buffer.length} octets)`, context: { owner: owner ? `${owner.type}/${owner.id}` : '' } });
+      this.journal.record({ actor, action: 'FICHIER_DEPOSE', fileId: saved.id, summary: `Fichier déposé (${mimeType}, ${buffer.length} octets)`, context: { owner: owner ? `${owner.type}/${owner.id}` : '' } });
       return saved;
     } catch (e) {
       await this.driver.delete(key).catch(() => undefined);
