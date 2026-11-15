@@ -14,7 +14,7 @@ const MB = 1024 * 1024;
  *   S3_ACCESS_KEY / S3_SECRET_KEY   lus aussi depuis *_FILE ou Vault (voir secrets)
  *   S3_FORCE_PATH_STYLE   true (défaut, MinIO) | false
  *   STORAGE_PREFIX        préfixe des clés, défaut : nom du service
- *   UPLOAD_MAX_MB         plafond global (défaut 100)
+ *   UPLOAD_MAX_MB         plafond global (défaut propre au service, 100 Mo en général)
  *   CLAMAV_HOST / CLAMAV_PORT       antivirus clamd
  *   STORAGE_ANTIVIRUS     required (défaut en production) | optional (défaut ailleurs)
  *   STORAGE_LINK_TTL_SECONDS        durée des liens de téléchargement (défaut 300)
@@ -28,11 +28,11 @@ export interface StorageSettings {
   linkTtlSeconds: number;
 }
 
-export function storageSettings(serviceName: string, env: Env = process.env): StorageSettings {
+export function storageSettings(serviceName: string, env: Env = process.env, defaultMaxMb = 100): StorageSettings {
   return {
     driver: driverFromEnv(env),
     prefix: (env.STORAGE_PREFIX || serviceName).replace(/[^a-zA-Z0-9_-]/g, '-'),
-    maxBytes: Number(env.UPLOAD_MAX_MB || '100') * MB,
+    maxBytes: Number(env.UPLOAD_MAX_MB || defaultMaxMb) * MB,
     clamav: env.CLAMAV_HOST ? { host: env.CLAMAV_HOST, port: Number(env.CLAMAV_PORT || '3310') } : null,
     antivirusRequired: (env.STORAGE_ANTIVIRUS || (env.NODE_ENV === 'production' ? 'required' : 'optional')) === 'required',
     linkTtlSeconds: Math.max(30, Math.min(3600, Number(env.STORAGE_LINK_TTL_SECONDS || '300'))),

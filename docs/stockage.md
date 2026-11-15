@@ -92,6 +92,8 @@ lecture.
 
 ## À vérifier par l'exploitant
 
+- clamd limite par défaut la taille analysée à 25 Mo (`StreamMaxLength`) : la régler au moins à
+  `UPLOAD_MAX_MB`, sinon les gros fichiers sont refusés (antivirus en erreur).
 - Signatures antivirus réelles : `freshclam` doit pouvoir mettre à jour clamd. Les essais ont été
   faits avec le vrai moteur ClamAV et une signature de test (EICAR), sans accès aux bases de
   signatures officielles.

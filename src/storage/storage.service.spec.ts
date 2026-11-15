@@ -149,6 +149,14 @@ describe('Bibliothèque de stockage SIAM', () => {
     await expect(s.read(f.id)).rejects.toThrow(/altéré/);
   });
 
+  it('reprise (anyType) : tout type conservé, antivirus et chiffrement appliqués', async () => {
+    const s = make({});
+    const f = await s.store({ buffer: Buffer.from([0, 1, 2, 3, 250]), originalname: 'enregistreur.vdr' }, { mimeTypes: [], maxBytes: 1024, anyType: true }, null);
+    expect(f.mimeType).toBe('application/octet-stream');
+    expect((await s.read(f.id)).data.equals(Buffer.from([0, 1, 2, 3, 250]))).toBe(true);
+    await expect(s.store({ buffer: Buffer.from([0, 1, 2]), originalname: 'x.vdr' }, { mimeTypes: [], maxBytes: 1024 }, null)).rejects.toThrow(/Type de fichier/);
+  });
+
   it('le format chiffré refuse une clé erronée', () => {
     const { blob } = sealFile(PNG);
     expect(() => openFile(blob, sealFile(PNG).fileKey)).toThrow();

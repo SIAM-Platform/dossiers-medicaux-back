@@ -9,7 +9,7 @@ import { clamdScan } from './clamav';
 import { DriverName, StorageDriver } from './drivers';
 import { isSealed, openFile, sealFile } from './file-crypto';
 import { driverFromEnv, StorageSettings, storageSettings } from './storage.config';
-import { fileError, linkSecret, SERVICE_NAME, StorageActor, StorageJournal, toActor } from './storage.adapter';
+import { DEFAULT_UPLOAD_MAX_MB, fileError, linkSecret, SERVICE_NAME, StorageActor, StorageJournal, toActor } from './storage.adapter';
 import { EXTENSIONS, UploadPolicy } from './storage.policies';
 import { AvStatus, StoredFile } from './stored-file.entity';
 
@@ -61,7 +61,7 @@ export class StorageService implements OnModuleInit {
     @InjectRepository(StoredFile) private readonly files: Repository<StoredFile>,
     private readonly journal: StorageJournal,
   ) {
-    this.settings = storageSettings(SERVICE_NAME);
+    this.settings = storageSettings(SERVICE_NAME, process.env, DEFAULT_UPLOAD_MAX_MB);
   }
 
   get driver(): StorageDriver {
@@ -317,7 +317,13 @@ export class StorageService implements OnModuleInit {
     let data: Buffer;
     if (file.encryption === 'AES256GCM') {
       if (!file.fileKey || !isSealed(raw)) throw new Error('Fichier chiffré illisible');
-      data = openFile(raw, file.fileKey);
+      try {
+        data = openFile(raw, file.fileKey);
+      } catch {
+        // Le contrôle d'authenticité d'AES-GCM échoue : le contenu chiffré a été modifié.
+        this.journal.record({ actor: null, action: 'FICHIER_ALTERE', fileId: file.id, summary: 'Contenu chiffré modifié dans le stockage', context: {} });
+        throw new Error("Fichier altéré : le contenu chiffré a été modifié dans le stockage");
+      }
     } else data = raw;
     if (sha256(data) !== file.sha256) {
       this.journal.record({ actor: null, action: 'FICHIER_ALTERE', fileId: file.id, summary: "Empreinte différente de celle enregistrée au dépôt", context: {} });
@@ -347,6 +353,9 @@ export class StorageService implements OnModuleInit {
   private async detectMime(file: IncomingFile, policy: UploadPolicy): Promise<string | null> {
     const ext = extname(file.originalname || '').toLowerCase();
     const detected = await FileType.fromBuffer(file.buffer);
+    // Reprise de pièces existantes (preuves…) : tout type est conservé tel quel, l'antivirus et
+    // l'empreinte s'appliquent ; jamais pour un dépôt ordinaire.
+    if (policy.anyType) return detected?.mime ?? policy.textTypes?.[ext] ?? 'application/octet-stream';
     if (detected) {
       if (!policy.mimeTypes.includes(detected.mime)) return null;
       // Une extension présente doit correspondre au contenu (pas de « photo.jpg » qui serait un PDF).

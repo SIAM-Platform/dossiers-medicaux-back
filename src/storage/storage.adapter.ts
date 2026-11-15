@@ -13,6 +13,9 @@ import { masterKey } from '../privacy/keyring';
  */
 export const SERVICE_NAME = 'dmgm';
 
+/** Plafond de taille par défaut (UPLOAD_MAX_MB le remplace). */
+export const DEFAULT_UPLOAD_MAX_MB = 100;
+
 export { Authenticated, Public };
 
 /** Clé de chaque fichier, chiffrée par la clé de données du service (rotation : crypto:keys). */
