@@ -45,7 +45,8 @@ export function applyHttpSecurity(app: INestApplication, opts: { allowedHeaders?
     origin: origins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: opts.allowedHeaders ?? ['Authorization', 'Content-Type', 'Accept', 'Accept-Language', 'X-Request-Id', 'X-Local-User'],
+    // En-têtes demandés acceptés sauf liste fournie : seules les origines sont restreintes.
+    ...(opts.allowedHeaders ? { allowedHeaders: opts.allowedHeaders } : {}),
     exposedHeaders: ['Content-Disposition', 'ETag', 'X-Request-Id'],
     maxAge: 600,
   });
