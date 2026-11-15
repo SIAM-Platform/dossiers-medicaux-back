@@ -1,3 +1,4 @@
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 /* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
@@ -27,6 +28,8 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
 
 @Module({
   imports: [
+    // Limitation de débit par adresse IP (RATE_LIMIT_PER_MINUTE, 300 par défaut).
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: Number(process.env.RATE_LIMIT_PER_MINUTE ?? '300') }]),
     ConfigModule.forRoot({
       load: [configuration],
       isGlobal: true,
@@ -65,6 +68,7 @@ import { PRIVACY_INVENTORY_DATA } from './privacy/inventory';
     }),
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     MarinProtectionService,
     // Ordre : authentification Keycloak, puis permissions fines (route sans permission = refus).
     { provide: APP_GUARD, useClass: KeycloakAuthGuard },

@@ -9,6 +9,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import { json, urlencoded } from 'express';
 import { loadSecrets } from './privacy/secrets';
+import { applyHttpSecurity, swaggerEnabled } from './security/http-security';
 
 async function bootstrap() {
   // Secrets lus depuis le coffre (Vault), des fichiers montés (NOM_FILE) ou l'environnement, avant tout le reste.
@@ -16,27 +17,26 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   
-  // Augmenter la limite de taille des requêtes
-  app.use(json({ limit: '50mb' }));
-  app.use(urlencoded({ limit: '50mb', extended: true }));
+  // En-têtes de sécurité, IP réelle derrière le proxy, origines CORS explicites (src/security).
+  const corsOrigins = applyHttpSecurity(app);
+
+  // Taille des requêtes : les scans arrivent encodés en base64 (BODY_LIMIT, 50mb par défaut).
+  const bodyLimit = process.env.BODY_LIMIT || '50mb';
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ limit: bodyLimit, extended: true }));
 
   const configService = app.get(ConfigService);
 
   // Validation globale
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: false,
+      // Champs non déclarés retirés avant le code métier : aucun champ imprévu ne peut être écrit
+      // (affectation de masse). Pas de refus, les écrans envoient parfois l'objet complet.
+      whitelist: true,
       forbidNonWhitelisted: false,
       transform: true,
     }),
   );
-
-  // CORS
-  const corsOrigins = configService.get<string>('cors.origins') || ['http://localhost:4200'];
-  app.enableCors({
-    origin: corsOrigins,
-    credentials: true,
-  });
 
   // Préfixe global
   app.setGlobalPrefix('api');
@@ -51,8 +51,8 @@ async function bootstrap() {
     .setVersion('1.0')
     .addBearerAuth()
     .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  // Documentation fermée en production sauf SWAGGER_ENABLED=true.
+  if (swaggerEnabled()) SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
 
   const port = configService.get<number>('port') || 3008;
   const nodeEnv = configService.get<string>('nodeEnv') || 'development';
@@ -64,6 +64,6 @@ async function bootstrap() {
   console.log(`📚 Swagger : http://localhost:${port}/api/docs`);
   console.log(`🔐 Keycloak realm : ${configService.get('keycloak.realm')}`);
   console.log(`🔐 Keycloak URL   : ${configService.get('keycloak.authServerUrl')}`);
-  console.log(`✅ CORS origins   : ${JSON.stringify(corsOrigins)}`);
+  console.log(`✅ CORS origins   : ${corsOrigins.map(String).join(', ')}`);
 }
 bootstrap();
