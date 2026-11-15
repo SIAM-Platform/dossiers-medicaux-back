@@ -1,0 +1,77 @@
+# Chaîne logicielle : analyse statique, dépendances, inventaire des composants (SBOM) et secrets.
+# Identique dans tous les dépôts SIAM ; règles d'analyse versionnées dans .semgrep/siam.yml.
+name: Sécurité
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '17 4 * * 1' # chaque lundi : nouvelles vulnérabilités publiées sur les dépendances
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: securite-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sast:
+    name: Analyse statique (Semgrep, règles SIAM)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install semgrep==1.185.0
+      - name: Règles bloquantes (gravité ERROR)
+        run: semgrep scan --config .semgrep/siam.yml --metrics=off --disable-version-check --severity ERROR --error src
+      - name: Rapport complet (avertissements et inventaire)
+        if: always()
+        run: semgrep scan --config .semgrep/siam.yml --metrics=off --disable-version-check --sarif --output semgrep.sarif src
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: semgrep
+          path: semgrep.sarif
+
+  dependances:
+    name: Dépendances et SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Installation (sans scripts)
+        run: npm ci --ignore-scripts --legacy-peer-deps
+      - name: Vulnérabilités critiques des dépendances de production (bloquant)
+        run: npm audit --omit=dev --audit-level=critical
+      - name: Rapport complet des vulnérabilités
+        if: always()
+        run: npm audit --omit=dev --json > npm-audit.json || true
+      - name: Inventaire des composants (SBOM CycloneDX)
+        run: npx --yes @cyclonedx/cyclonedx-npm@1.19.3 --omit dev --output-format JSON --output-file sbom.cdx.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dependances
+          path: |
+            npm-audit.json
+            sbom.cdx.json
+
+  secrets:
+    name: Recherche de secrets (historique complet)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.24.2 git /repo --redact --verbose --exit-code 1

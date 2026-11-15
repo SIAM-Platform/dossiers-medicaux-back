@@ -1,0 +1,84 @@
+# Image de l'application : construite, analysée (Trivy), publiée dans le registre privé GitHub
+# (ghcr.io/siam-platform/dossiers-medicaux-back), puis signée (cosign, sans clé : identité OIDC du workflow) avec son SBOM attesté.
+# Vérification avant déploiement :
+#   cosign verify ghcr.io/siam-platform/dossiers-medicaux-back:main \
+#     --certificate-identity-regexp '^https://github.com/SIAM-Platform/' \
+#     --certificate-oidc-issuer https://token.actions.githubusercontent.com
+name: Image
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write # signature sans clé (Sigstore)
+
+concurrency:
+  group: image-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/siam-platform/dossiers-medicaux-back
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Construction et publication
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:main
+            ${{ env.IMAGE }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Analyse de l'image, bloquante sur les vulnérabilités critiques corrigeables
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+      - name: Rapport complet de l'image
+        if: always()
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          format: json
+          output: trivy-image.json
+          exit-code: '0'
+      - name: SBOM de l'image (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom-image.cdx.json
+          upload-artifact: false
+      - uses: sigstore/cosign-installer@v3
+      - name: Signature de l'image et attestation du SBOM
+        env:
+          REF: ${{ env.IMAGE }}@${{ steps.build.outputs.digest }}
+        run: |
+          cosign sign --yes "$REF"
+          cosign attest --yes --type cyclonedx --predicate sbom-image.cdx.json "$REF"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: image
+          path: |
+            trivy-image.json
+            sbom-image.cdx.json

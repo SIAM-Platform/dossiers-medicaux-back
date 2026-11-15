@@ -1,0 +1,119 @@
+# Règles d'analyse statique (SAST) SIAM, versionnées dans chaque dépôt : aucune dépendance à un
+# registre externe. Une exception justifiée se marque « // nosemgrep: <id> — raison ».
+rules:
+  - id: siam-eval
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Exécution de code dynamique (eval / new Function) interdite.
+    pattern-either:
+      - pattern: eval(...)
+      - pattern: new Function(...)
+  - id: siam-child-process-shell
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Commande shell construite à partir d'une chaîne variable (injection de commande) ; utiliser execFile avec une liste d'arguments.
+    pattern-either:
+      - pattern: $CP.exec(`...${$X}...`, ...)
+      - pattern: $CP.execSync(`...${$X}...`, ...)
+      - pattern: exec(`...${$X}...`, ...)
+      - pattern: execSync(`...${$X}...`, ...)
+      - pattern: $CP.exec($A + $B, ...)
+      - pattern: execSync($A + $B, ...)
+  - id: siam-sql-user-input
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Donnée de requête (dto, query, body, params) interpolée dans du SQL ; la passer en paramètre ($1, :nom).
+    patterns:
+      - pattern-either:
+          - pattern: $Q.query(`...${$X}...`, ...)
+          - pattern: $Q.query($A + $X, ...)
+          - pattern: $QB.where(`...${$X}...`, ...)
+          - pattern: $QB.andWhere(`...${$X}...`, ...)
+          - pattern: $QB.orWhere(`...${$X}...`, ...)
+          - pattern: $QB.orderBy(`...${$X}...`, ...)
+          - pattern: $QB.having(`...${$X}...`, ...)
+      - metavariable-regex:
+          metavariable: $X
+          # Donnée de requête lue directement ; pas un appel (fonction de citation), ni le tableau des
+          # paramètres (params.push), ni limit / page déjà validés comme entiers.
+          regex: ^(req|request|body|dto|query|q|params|filters?|search|criteria|input)\b(?!\s*\()(?!\s*\.\s*(limit|page|push|length)\b)
+  - id: siam-sql-interpolation
+    languages: [typescript, javascript]
+    severity: INFO
+    message: SQL assemblé par interpolation (noms de tables ou fragments internes) ; vérifier qu'aucune valeur externe n'y entre.
+    pattern-either:
+      - pattern: $Q.query(`...${$X}...`, ...)
+      - pattern: $Q.query($A + $B, ...)
+  - id: siam-tls-disabled
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Vérification TLS désactivée.
+    pattern-either:
+      - pattern: |
+          { ..., rejectUnauthorized: false, ... }
+      - pattern: process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0"
+  - id: siam-jwt-unsafe
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: Jeton accepté sans vérification complète (algorithme none, expiration ignorée ou decode sans verify).
+    pattern-either:
+      - pattern: |
+          { ..., ignoreExpiration: true, ... }
+      - pattern: |
+          { ..., algorithms: [..., "none", ...], ... }
+  - id: siam-cors-any-origin
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: CORS ouvert à toute origine.
+    pattern-either:
+      - pattern: $APP.enableCors()
+      - pattern: |
+          $APP.enableCors({ ..., origin: true, ... })
+      - pattern: |
+          $APP.enableCors({ ..., origin: "*", ... })
+  - id: siam-typeorm-synchronize
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: synchronize:true modifie le schéma au démarrage ; utiliser les migrations.
+    pattern: |
+      { ..., synchronize: true, ... }
+  - id: siam-validation-no-whitelist
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: ValidationPipe sans whitelist (affectation de masse possible).
+    pattern: |
+      new ValidationPipe({ ..., whitelist: false, ... })
+  - id: siam-angular-bypass-sanitizer
+    languages: [typescript]
+    severity: WARNING
+    message: Contournement du nettoyage Angular (bypassSecurityTrust*) ; à justifier.
+    pattern-regex: \.bypassSecurityTrust\w+\(
+  - id: siam-dangerous-html
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: HTML injecté sans nettoyage (innerHTML / dangerouslySetInnerHTML / document.write) ; à justifier.
+    pattern-either:
+      - pattern: $E.innerHTML = $X
+      - pattern: document.write(...)
+      - pattern: |
+          <$T dangerouslySetInnerHTML={...} />
+  - id: siam-weak-hash-security
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: MD5 / SHA-1 ne conviennent pas à un usage de sécurité ; à justifier si simple empreinte technique.
+    pattern-either:
+      - pattern: createHash("md5")
+      - pattern: createHash("sha1")
+      - pattern: $C.createHash("md5")
+      - pattern: $C.createHash("sha1")
+  - id: siam-math-random-secret
+    languages: [typescript, javascript]
+    severity: WARNING
+    message: Math.random n'est pas cryptographique ; utiliser crypto.randomBytes / randomUUID pour un jeton, code ou mot de passe.
+    patterns:
+      - pattern: Math.random()
+      - pattern-inside: |
+          $F = ...;
+      - metavariable-regex:
+          metavariable: $F
+          regex: (?i).*(token|secret|password|motdepasse|otp|code|cle|key|nonce).*
