@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { QueryFailedError } from 'typeorm';
+import { isUnavailable, RETRY_AFTER_SECONDS } from '../observability/unavailable';
 
 interface Problem {
   type: string;
@@ -32,6 +33,7 @@ const TITLES: Record<number, string> = {
   422: 'Données non traitables',
   429: 'Trop de requêtes',
   500: 'Erreur interne',
+  503: 'Service momentanément indisponible',
 };
 
 /**
@@ -54,6 +56,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         `${req.method} ${req.url} -> ${problem.status}`,
         exception instanceof Error ? exception.stack : String(exception),
       );
+    if (problem.status === 503) res.setHeader('Retry-After', String(RETRY_AFTER_SECONDS));
     res.status(problem.status).type('application/problem+json').json(problem);
   }
 
@@ -163,6 +166,8 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         );
     }
 
+    // Base ou dépendance injoignable : 503, la requête peut être rejouée (Retry-After).
+    if (isUnavailable(exception)) return make(503, 'UNAVAILABLE', 'Service momentanément indisponible, réessayez dans quelques instants');
     return make(500, 'INTERNAL', 'Une erreur interne est survenue');
   }
 }
