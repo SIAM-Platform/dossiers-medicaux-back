@@ -85,6 +85,9 @@ export function convert(value: unknown, type: string): unknown {
   if (type === 'json' || type === 'jsonb')
     return typeof value === 'string' ? value : JSON.stringify(value);
   if (Buffer.isBuffer(value)) return value.toString('utf8');
+  // Date MySQL (base d'avant la 2.0, colonne DATETIME) copiée dans une colonne devenue TEXT
+  // (chiffrée) : écrite en ISO, comme le fait l'application ; le chiffrement suit au démarrage.
+  if (value instanceof Date) return value.toISOString();
   return value;
 }
 
@@ -245,8 +248,17 @@ export async function transfer(
     // Vérification : chaque table relue des deux côtés, valeurs normalisées et comparées.
     let ok = true;
     for (const { table, cols } of plan) {
-      const src = digest(await sourceRows(my, table), cols);
-      const dst = digest(await pg.query(`SELECT * FROM ${q(table)}`), cols);
+      // Tête de la chaîne d'audit : la migration crée une tête vide (seq 0) ; une base d'avant la
+      // 2.0 n'a pas de journal. Seules les têtes non vides sont comparées.
+      const kept = (rows: Record<string, unknown>[]) =>
+        table === 'audit_chain_head'
+          ? rows.filter((r) => Number(r.seq) > 0)
+          : rows;
+      const src = digest(kept(await sourceRows(my, table)), cols);
+      const dst = digest(
+        kept(await pg.query(`SELECT * FROM ${q(table)}`)),
+        cols,
+      );
       const same = src.count === dst.count && src.hash === dst.hash;
       if (!same) ok = false;
       log(
