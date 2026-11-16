@@ -265,11 +265,58 @@ export async function transfer(
         `${same ? 'IDENTIQUE' : 'ÉCART   '}  ${table} : ${src.count} → ${dst.count}`,
       );
     }
+    // Marque posée seulement après une vérification réussie : le démarrage ne relance plus le transfert.
+    if (ok) {
+      await pg.query(
+        `CREATE TABLE IF NOT EXISTS ${TRANSFER_MARK} (done_at timestamptz NOT NULL DEFAULT now(), source text NOT NULL)`,
+      );
+      await pg.query(`INSERT INTO ${TRANSFER_MARK} (source) VALUES ($1)`, [
+        `${env.MYSQL_HOST || 'localhost'}/${env.MYSQL_DB ?? ''}`,
+      ]);
+    }
     return ok;
   } finally {
     await my.end();
     await pg.destroy();
   }
+}
+
+/** Table témoin d'un transfert terminé et vérifié. */
+const TRANSFER_MARK = 'mysql_transfer';
+
+/**
+ * Transfert au démarrage du service (MYSQL_TRANSFER_ON_START=true), pour les plateformes où l'on
+ * ne lance pas de commande avant le premier démarrage (Coolify) : exécuté avant l'application,
+ * donc sur une base PostgreSQL encore vide ; ignoré une fois la marque posée. En cas d'échec, le
+ * service ne démarre pas (rien n'est écrit par l'application).
+ */
+export async function transferOnStart(
+  env: NodeJS.ProcessEnv,
+  log: (s: string) => void = console.log,
+): Promise<void> {
+  const pg = await new DataSource({
+    ...databaseOptions(env),
+    migrationsRun: false,
+  }).initialize();
+  try {
+    const [{ mark }]: { mark: string | null }[] = await pg.query(
+      `SELECT to_regclass('public.${TRANSFER_MARK}')::text AS mark`,
+    );
+    if (mark) {
+      log(
+        'Transfert MySQL déjà fait : ignoré (retirer MYSQL_TRANSFER_ON_START).',
+      );
+      return;
+    }
+  } finally {
+    await pg.destroy();
+  }
+  log('Transfert MySQL → PostgreSQL avant le démarrage…');
+  if (!(await transfer(env, log)))
+    throw new Error(
+      'ÉCHEC du transfert : des écarts ont été trouvés (voir ci-dessus). Recréer la base PostgreSQL vide avant de relancer.',
+    );
+  log('Transfert terminé et vérifié : toutes les tables sont identiques.');
 }
 
 if (require.main === module) {

@@ -13,10 +13,15 @@ import { json, urlencoded } from 'express';
 import { loadSecrets } from './privacy/secrets';
 import { applyHttpSecurity, swaggerEnabled } from './security/http-security';
 import { applyObservability } from './observability/observability';
+import { transferOnStart } from './scripts/mysql-to-postgres';
 
 async function bootstrap() {
   // Secrets lus depuis le coffre (Vault), des fichiers montés (NOM_FILE) ou l'environnement, avant tout le reste.
   await loadSecrets(process.env);
+  // Passage de MySQL à PostgreSQL au premier démarrage (une seule fois ; docs/postgresql.md).
+  if (process.env.MYSQL_TRANSFER_ON_START === 'true') {
+    await transferOnStart(process.env);
+  }
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   // Identifiant de requête, journaux JSON, métriques /metrics, sondes /health/live et /health/ready (src/observability).
   applyObservability(app);

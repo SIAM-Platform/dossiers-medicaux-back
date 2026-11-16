@@ -43,6 +43,13 @@ l'API et l'interface ne changent pas.
    alors la clé (`FIELD_ENCRYPTION_KEY` ou `FIELD_MASTER_KEY`). Essai sur une base au schéma de
    `main` (40 marins, 89 visites) : transfert vérifié, 1 265 valeurs chiffrées au démarrage,
    lectures de l'API identiques à `main` (sauf ajouts attendus : permissions dans `/users/me`).
+   **Sans accès à une ligne de commande avant le démarrage (Coolify)** : ajouter au service les
+   variables `MYSQL_*` ci-dessus et `MYSQL_TRANSFER_ON_START=true`. Au démarrage, **avant**
+   l'application, le service fait le transfert et sa vérification, puis pose une marque (table
+   `mysql_transfer`) : les démarrages suivants l'ignorent. En cas d'écart, ou si la base
+   PostgreSQL contient déjà des données (service démarré une fois sans cette variable), le service
+   ne démarre pas et n'écrit rien : recréer la base vide. Retirer ensuite `MYSQL_TRANSFER_ON_START`
+   et les variables `MYSQL_*`.
 4. Démarrer DMGM sur PostgreSQL, puis vérifier le journal : `GET /api/audit/verify` doit répondre
    `ok: true` avec le même nombre d'entrées.
 5. Conserver la sauvegarde MySQL jusqu'à la fin de la recette.
