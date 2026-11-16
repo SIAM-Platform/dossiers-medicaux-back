@@ -3,6 +3,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { RequirePermission } from '../access/decorators';
 import { PERMISSIONS } from '../access/permissions';
 import { AuditInterceptor } from './audit.interceptor';
+import { AuditChainCheckService } from './audit-chain-check.service';
 import { AuditService } from './audit.service';
 
 @Controller('audit')
@@ -34,6 +35,7 @@ export class AuditController {
   controllers: [AuditController],
   providers: [
     AuditService,
+    AuditChainCheckService,
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
   exports: [AuditService],

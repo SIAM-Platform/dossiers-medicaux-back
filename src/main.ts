@@ -1,3 +1,5 @@
+// Traces OpenTelemetry : à charger avant tout autre module (inactif sans collecteur configuré).
+import './observability/tracing';
 /* eslint-disable prettier/prettier */
 /* eslint-disable @typescript-eslint/no-floating-promises */
 import { NestFactory } from '@nestjs/core';
@@ -10,11 +12,14 @@ import { join } from 'path';
 import { json, urlencoded } from 'express';
 import { loadSecrets } from './privacy/secrets';
 import { applyHttpSecurity, swaggerEnabled } from './security/http-security';
+import { applyObservability } from './observability/observability';
 
 async function bootstrap() {
   // Secrets lus depuis le coffre (Vault), des fichiers montés (NOM_FILE) ou l'environnement, avant tout le reste.
   await loadSecrets(process.env);
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  // Identifiant de requête, journaux JSON, métriques /metrics, sondes /health/live et /health/ready (src/observability).
+  applyObservability(app);
 
   
   // En-têtes de sécurité, IP réelle derrière le proxy, origines CORS explicites (src/security).

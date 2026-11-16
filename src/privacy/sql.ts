@@ -1,4 +1,5 @@
 import { DataSource, EntityManager, QueryRunner } from 'typeorm';
+import { recordJob } from '../observability/metrics';
 
 type Runner = DataSource | EntityManager | QueryRunner;
 
@@ -81,7 +82,16 @@ export async function runExclusive<T>(
     if (!(row?.locked === true || Number(row?.locked) === 1))
       return { ran: false };
     try {
-      return { ran: true, result: await fn() };
+      // Durée et résultat de la tâche réellement exécutée (métriques siam_job_*).
+      const started = Date.now();
+      try {
+        const result = await fn();
+        recordJob(name, true, Date.now() - started);
+        return { ran: true, result };
+      } catch (e) {
+        recordJob(name, false, Date.now() - started);
+        throw e;
+      }
     } finally {
       await runner
         .query(
