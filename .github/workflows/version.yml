@@ -1,0 +1,45 @@
+# Publication d'une version numérotée (SemVer) : étiquette vX.Y.Z posée sur main.
+# Vérifie que l'étiquette, package.json et CHANGELOG.md concordent, puis publie la release GitHub
+# avec les notes de version. Procédure : docs/pratiques-developpement.md.
+name: Version
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write # création de la release
+
+jobs:
+  release:
+    name: Notes de version et release
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Étiquette atteignable depuis main
+        run: |
+          git fetch origin main
+          git merge-base --is-ancestor "$GITHUB_SHA" origin/main || { echo "::error::L'étiquette doit être posée sur un commit de main"; exit 1; }
+      - name: Étiquette = version de package.json
+        run: |
+          V="${GITHUB_REF_NAME#v}"
+          P="$(node -p "require('./package.json').version")"
+          [ "$V" = "$P" ] || { echo "::error::Étiquette $GITHUB_REF_NAME, package.json $P"; exit 1; }
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+      - name: Notes de version extraites de CHANGELOG.md
+        run: |
+          awk -v v="$VERSION" '
+            /^## / { if (inside) exit; if (index($0, "[" v "]") || $0 ~ "^## " v "( |$)") { inside=1; next } }
+            inside { print }
+          ' CHANGELOG.md > notes.md
+          [ -s notes.md ] || { echo "::error::Aucune rubrique « ## [$VERSION] » dans CHANGELOG.md"; exit 1; }
+          cat notes.md
+      - name: Release GitHub
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PRE=""; case "$VERSION" in *-*) PRE="--prerelease";; esac
+          gh release create "$GITHUB_REF_NAME" --title "Version $VERSION" --notes-file notes.md --verify-tag $PRE

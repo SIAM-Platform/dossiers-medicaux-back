@@ -1,0 +1,24 @@
+# Propriétaires du code : leur revue est exigée sur les fichiers qui les concernent
+# (règle « Require review from Code Owners » de la protection de la branche main).
+# Voir docs/pratiques-developpement.md.
+#
+# À COMPLÉTER : propriétaire(s) à confirmer par la direction du projet (équipe GitHub de
+# l'organisation, par exemple @SIAM-Platform/<equipe>, ou comptes nominatifs).
+# Les lignes ci-dessous restent en commentaire tant que les équipes n'existent pas sur GitHub :
+# une équipe inconnue rendrait la règle inopérante.
+#
+# Propriétaire par défaut de tout le dépôt
+# *                       @SIAM-Platform/<equipe-a-completer>
+#
+# Zones sensibles : revue d'un second propriétaire (sécurité)
+# /.github/               @SIAM-Platform/<securite-a-completer>
+# /.semgrep/              @SIAM-Platform/<securite-a-completer>
+# /Dockerfile             @SIAM-Platform/<securite-a-completer>
+# /package-lock.json      @SIAM-Platform/<securite-a-completer>
+#
+# Code sensible propre à ce dépôt
+# /src/security/ @SIAM-Platform/<securite-a-completer>
+# /src/observability/ @SIAM-Platform/<securite-a-completer>
+# /src/storage/ @SIAM-Platform/<securite-a-completer>
+# /src/privacy/ @SIAM-Platform/<securite-a-completer>
+# /src/migrations/ @SIAM-Platform/<securite-a-completer>
