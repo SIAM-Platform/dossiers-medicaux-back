@@ -37,6 +37,12 @@ l'API et l'interface ne changent pas.
    compteurs, puis **relit les deux bases et compare chaque ligne de chaque table**. Il se termine
    par « Transfert terminé et vérifié » (code 0) ou par la liste des écarts (code 1, la base
    PostgreSQL est alors à recréer). MySQL n'est jamais modifié.
+   **Base de la version 1 (branche `main`, données en clair)** : le transfert accepte aussi cette
+   base (pas de trousseau ni de journal d'audit : les tables correspondantes restent vides). Les
+   données sont copiées telles quelles et **chiffrées au premier démarrage** de la 2.0, qui exige
+   alors la clé (`FIELD_ENCRYPTION_KEY` ou `FIELD_MASTER_KEY`). Essai sur une base au schéma de
+   `main` (40 marins, 89 visites) : transfert vérifié, 1 265 valeurs chiffrées au démarrage,
+   lectures de l'API identiques à `main` (sauf ajouts attendus : permissions dans `/users/me`).
 4. Démarrer DMGM sur PostgreSQL, puis vérifier le journal : `GET /api/audit/verify` doit répondre
    `ok: true` avec le même nombre d'entrées.
 5. Conserver la sauvegarde MySQL jusqu'à la fin de la recette.
